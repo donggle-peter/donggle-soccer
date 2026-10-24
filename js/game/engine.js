@@ -14,13 +14,14 @@ export const Btn = { SHOOT: 0, PASS: 1, DASH: 2, ITEM: 3 };
 
 /** 난이도: 상대(컴퓨터) 팀이 얼마나 잘하나. 숫자를 바꾸면 경기 전체 난이도가 바뀐다 */
 export const AI = {
-  speedBase: 9.2, speedPerRating: 0.33,      // 달리기 (내 팀은 10.2 + 0.2 × 실력)
-  tackleRate: 1.0, tackleRatePerRating: 0.25, // 공 가진 상대에게 얼마나 자주 태클
-  tackleWin: 0.28, tackleWinPerRating: 0.055, // 태클 성공 확률
-  gkSave: 0.5, gkSavePerRating: 0.055,        // 상대 골키퍼 선방
-  shotError: 1.85,                            // 상대 슛 빗나감 (작을수록 정확)
-  humanTackleWin: 0.64,                       // 내 태클 성공 확률
-  humanShotSkill: 3.2,                        // 내 슛 정확도 (클수록 정확)
+  // 맨 처음(쉬운) 난이도
+  speedBase: 8.3, speedPerRating: 0.3,        // 달리기 (내 팀은 10.2 + 0.2 × 실력)
+  tackleRate: 0.55, tackleRatePerRating: 0.15, // 공 가진 상대에게 얼마나 자주 태클
+  tackleWin: 0.22, tackleWinPerRating: 0.04,  // 태클 성공 확률
+  gkSave: 0.4, gkSavePerRating: 0.05,         // 상대 골키퍼 선방
+  shotError: 2.1,                             // 상대 슛 빗나감 (작을수록 정확)
+  humanTackleWin: 0.78,                       // 내 태클 성공 확률
+  humanShotSkill: 3.6,                        // 내 슛 정확도 (클수록 정확)
 };
 export const Phase = { READY: 0, PLAY: 1, GOAL: 2, END: 3 };
 export const Stun = { NONE: 0, SLIP: 1, ICE: 2, KNOCK: 3, WHIFF: 4, DIVE: 5 };
@@ -333,7 +334,7 @@ export class MatchEngine {
     const h = this.human;
     const mag = hypot(this.joyX, this.joyY);
     if (h.stun > 0) { h.wantX = 0; h.wantY = 0; }
-    else if (mag > 0.15) {
+    else if (mag > 0.22) {
       const m = Math.min(1, mag), sp = this.speedOf(h);
       h.wantX = this.joyX / mag * m * sp;
       h.wantY = this.joyY / mag * m * sp;

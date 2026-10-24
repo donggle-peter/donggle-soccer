@@ -23,7 +23,9 @@ function attachTouches(canvas, app, getEngine, touch, onPause, intercept) {
     if (intercept?.(p, vw)) owners.set(ev.pointerId, 9);
     else if (L.isPause(p)) { onPause(); owners.set(ev.pointerId, 9); }
     else if (b != null) { e.press(b); touch.down[b] = true; owners.set(ev.pointerId, b); }
-    else if (p[0] < vw * 0.55 && p[1] > 120 && !touch.joyActive) {
+    else if (p[0] < vw * 0.55 && p[1] > 120) {
+      // 조이스틱 자리에 새로 누르면 언제나 새 조이스틱 (손 뗀 신호를 놓쳐 굳은 조이스틱이 있어도 덮어쓴다)
+      for (const [id, o] of [...owners]) if (o === -1) owners.delete(id);
       touch.joyActive = true; touch.joyBase = p; touch.joyKnob = p;
       e.joyX = 0; e.joyY = 0;
       owners.set(ev.pointerId, -1);
@@ -50,6 +52,18 @@ function attachTouches(canvas, app, getEngine, touch, onPause, intercept) {
   };
   canvas.addEventListener('pointerup', up);
   canvas.addEventListener('pointercancel', up);
+  // 아이폰이 손 뗀 신호 대신 '붙잡기 놓침'만 보내는 경우도 있다
+  canvas.addEventListener('lostpointercapture', up);
+  // 앱을 내렸다 오거나 다른 창으로 가면 조이스틱·버튼을 놓은 것으로
+  const releaseAll = () => {
+    owners.clear();
+    touch.joyActive = false; touch.down.fill(false);
+    const e = getEngine(); e.joyX = 0; e.joyY = 0;
+  };
+  const onHidden = () => { if (document.hidden) releaseAll(); };
+  window.addEventListener('blur', releaseAll);
+  document.addEventListener('visibilitychange', onHidden);
+  return () => { window.removeEventListener('blur', releaseAll); document.removeEventListener('visibilitychange', onHidden); };
   canvas.addEventListener('contextmenu', (ev) => ev.preventDefault());
 }
 
@@ -103,11 +117,11 @@ export function MatchScreen(app, st, { setup, kind }) {
   const canvas = Canvas('100%', '100%', (ctx, t, vw, vh) => drawMatch(ctx, engine, touch, vw, vh), { class: 'fill', anim: true });
   canvas.style.touchAction = 'none';
   root.append(canvas);
-  attachTouches(canvas, app, () => engine, touch, pause, null);
+  const untouch = attachTouches(canvas, app, () => engine, touch, pause, null);
   const unkeys = attachKeys(() => engine, pause);
   const onHide = () => { if (document.hidden) pause(); };
   document.addEventListener('visibilitychange', onHide);
-  const cleanup = () => { unkeys(); document.removeEventListener('visibilitychange', onHide); };
+  const cleanup = () => { unkeys(); untouch(); document.removeEventListener('visibilitychange', onHide); };
   app.onBack = pause;
   app.onFrame = (dt) => {
     if (!st.paused) engine.update(dt);
@@ -146,7 +160,7 @@ export function TutorialPlayScreen(app, st, { start }) {
   }, { class: 'fill', anim: true });
   canvas.style.touchAction = 'none';
   root.append(canvas);
-  attachTouches(canvas, app, () => run.engine, touch, pause, (p, vw) => {
+  const untouch = attachTouches(canvas, app, () => run.engine, touch, pause, (p, vw) => {
     if (run.finished) return true;
     const [l, tp, r, b] = run.skipRect(vw);
     if (p[0] >= l && p[0] <= r && p[1] >= tp && p[1] <= b) { run.skip(); resetTouch(run.engine, touch); return true; }
@@ -156,7 +170,7 @@ export function TutorialPlayScreen(app, st, { start }) {
   const unkeys = attachKeys(() => run.engine, pause);
   const onHide = () => { if (document.hidden) pause(); };
   document.addEventListener('visibilitychange', onHide);
-  const cleanup = () => { unkeys(); document.removeEventListener('visibilitychange', onHide); };
+  const cleanup = () => { unkeys(); untouch(); document.removeEventListener('visibilitychange', onHide); };
   app.onBack = pause;
   app.onFrame = (dt) => {
     if (!st.paused && !run.finished) run.update(dt);
