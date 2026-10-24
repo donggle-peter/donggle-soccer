@@ -1,0 +1,112 @@
+@font-face {
+  font-family: 'Jua';
+  src: url('../assets/jua.ttf') format('truetype');
+  font-display: block;
+}
+
+:root { --ink: #2b2150; }
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #6ec3ff;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+/* 가상 화면: 세로 576 단위. 실제 화면 크기에 맞춰 통째로 확대·축소한다 */
+#stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 576px;
+  transform-origin: 0 0;
+  overflow: hidden;
+  font-family: 'Jua', sans-serif;
+  color: var(--ink);
+  line-height: 1.25;
+}
+
+.screen { position: absolute; inset: 0; overflow: hidden; }
+.abs { position: absolute; }
+.fill { position: absolute; inset: 0; }
+.row { display: flex; flex-direction: row; align-items: center; }
+.col { display: flex; flex-direction: column; }
+.center { display: flex; align-items: center; justify-content: center; }
+.grow { flex: 1 1 0; min-width: 0; min-height: 0; }
+.nowrap { white-space: nowrap; }
+.ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+canvas { display: block; }
+
+.scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll::-webkit-scrollbar { display: none; }
+
+/* 글자 */
+.t { white-space: pre; display: inline-block; }
+.t.multi { white-space: pre-wrap; }
+.sym { display: inline-block; vertical-align: middle; }
+
+.ot { position: relative; display: inline-block; white-space: nowrap; line-height: 1.15; }
+.ot > .ot-f { position: absolute; left: 0; top: 0; right: 0; }
+
+/* 사탕 버튼: 아래 7 만큼 그림자 */
+.candy { position: relative; cursor: pointer; flex: none; }
+.candy > .c-shadow { position: absolute; left: 0; right: 0; top: 7px; bottom: 0; background: var(--ink); }
+.candy > .c-body { position: absolute; left: 0; right: 0; top: 0; bottom: 7px; border: 4px solid var(--ink); overflow: hidden; transition: transform 0.05s; }
+.candy > .c-body > .c-shine { position: absolute; left: 12px; right: 12px; top: 5px; height: calc(42% - 10px); background: rgba(255, 255, 255, 0.3); border-radius: 999px; }
+.candy > .c-content { position: absolute; left: 0; right: 0; top: 0; bottom: 7px; display: flex; align-items: center; justify-content: center; transition: transform 0.05s; }
+.candy:active > .c-body, .candy:active > .c-content { transform: translateY(5px); }
+.candy.disabled { opacity: 0.55; pointer-events: none; }
+
+/* 판 */
+.panel { position: relative; padding-bottom: 7px; }
+.panel > .p-shadow { position: absolute; left: 0; right: 0; top: 7px; bottom: 0; background: var(--ink); }
+.panel > .p-body { position: absolute; left: 0; right: 0; top: 0; bottom: 7px; overflow: hidden; }
+.panel > .p-border { position: absolute; left: 0; right: 0; top: 0; bottom: 7px; border: 4px solid var(--ink); pointer-events: none; }
+
+.chip { position: relative; padding-bottom: 4px; flex: none; }
+.chip > .ch-shadow { position: absolute; left: 0; right: 0; top: 4px; bottom: 0; background: var(--ink); border-radius: 999px; }
+.chip > .ch-body { position: relative; height: 40px; background: #fff; border: 3px solid var(--ink); border-radius: 999px; padding: 0 14px; display: flex; align-items: center; gap: 8px; }
+
+.badge {
+  position: absolute; right: -8px; top: -10px; transform: rotate(8deg);
+  background: #ff4f64; border: 3px solid var(--ink); border-radius: 14px; padding: 1px 9px; color: #fff; font-size: 13px; white-space: nowrap;
+}
+
+.toast {
+  position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%);
+  background: rgba(43, 33, 80, 0.9); border: 3px solid #fff; border-radius: 999px; padding: 10px 24px;
+  color: #fff; font-size: 20px; white-space: nowrap; z-index: 50; pointer-events: none;
+}
+
+.dim { position: absolute; inset: 0; background: rgba(43, 33, 80, 0.6); display: flex; align-items: center; justify-content: center; z-index: 40; }
+
+input.name-input {
+  font-family: 'Jua', sans-serif; font-size: 22px; color: var(--ink);
+  border: 3px solid var(--ink); border-radius: 14px; padding: 4px 12px; outline: none; background: #fff;
+  user-select: text; -webkit-user-select: text; touch-action: manipulation;
+}
+
+#rotate-hint {
+  position: fixed; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 12px;
+  background: #6ec3ff; color: var(--ink); font-family: 'Jua', sans-serif; font-size: 24px; text-align: center; z-index: 100;
+}
+@media (orientation: portrait) and (max-width: 900px) {
+  #rotate-hint { display: flex; }
+}

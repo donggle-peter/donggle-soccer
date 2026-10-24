@@ -1,0 +1,24 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}canvas{display:block}</style></head>
+<body><canvas id="c"></canvas>
+<script type="module">
+// 앱 아이콘 B안 (안드로이드 아이콘과 같은 그림): 하늘 + 햇살 + 잔디, 빨간 유니폼 동글이 + 공
+import { drawMongi, drawBall } from '../js/game/draw.js';
+const S = +(new URLSearchParams(location.search).get('s') || 512);
+const c = document.getElementById('c'); c.width = S; c.height = S;
+const ctx = c.getContext('2d');
+ctx.scale(S / 108, S / 108);
+const g = ctx.createLinearGradient(0, 0, 0, 108); g.addColorStop(0, '#6ec3ff'); g.addColorStop(1, '#bfe8ff');
+ctx.fillStyle = g; ctx.fillRect(0, 0, 108, 108);
+ctx.fillStyle = 'rgba(255,255,255,0.22)';
+for (let k = 0; k < 12; k++) {
+  const a = k * Math.PI / 6, b = a + 0.2;
+  ctx.beginPath(); ctx.moveTo(54, 54); ctx.lineTo(54 + Math.cos(a) * 90, 54 + Math.sin(a) * 90); ctx.lineTo(54 + Math.cos(b) * 90, 54 + Math.sin(b) * 90); ctx.closePath(); ctx.fill();
+}
+ctx.fillStyle = '#79d36b'; ctx.fillRect(0, 76.7, 108, 31.3);
+ctx.fillStyle = 'rgba(43,33,80,0.25)'; ctx.fillRect(0, 76.7, 108, 1.7);
+ctx.translate(54, 54); ctx.scale(0.667, 0.667); ctx.translate(-54, -54);
+drawMongi(ctx, 52, 90, 0.98, 0xffff4f64, { shadow: false });
+drawBall(ctx, 80, 84, 10, 0);
+document.title = 'done';
+</script></body></html>
