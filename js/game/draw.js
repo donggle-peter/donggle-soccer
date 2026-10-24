@@ -52,13 +52,31 @@ export function textWidth(ctx, s, size) {
   return ctx.measureText(s).width;
 }
 
+/**
+ * 글자를 세로 가운데에 놓기 위한 기준선 위치. 실제로 그려지는 모양의 위·아래 끝을 재서 맞춘다.
+ * (이모지는 기기마다 글꼴 높이가 달라서, 글꼴 기준으로 맞추면 아이폰에서 아래로 쏠린다)
+ */
+const midCache = new Map();
+function middleOffset(ctx, s, size) {
+  const key = s + '|' + size;
+  let v = midCache.get(key);
+  if (v == null) {
+    const m = ctx.measureText(s);
+    const a = m.actualBoundingBoxAscent, d = m.actualBoundingBoxDescent;
+    v = Number.isFinite(a) && Number.isFinite(d) && a + d > 0 ? (a - d) / 2 : size * 0.36;
+    if (midCache.size > 2000) midCache.clear();
+    midCache.set(key, v);
+  }
+  return v;
+}
+
 /** 외곽선 있는 글자. y 는 글자 세로 가운데 기준. align: 'center' | 'left' | 'right' */
 export function label(ctx, s, x, y, size, color = WHITE, stroke = 0, strokeColor = INK, align = 'center', alpha = 1) {
   if (hasSymbols(s)) return labelWithSymbols(ctx, s, x, y, size, color, stroke, strokeColor, align, alpha);
   ctx.font = `${size}px ${FONT}`;
   ctx.textAlign = align;
   ctx.textBaseline = 'alphabetic';
-  const base = y + size * 0.36;
+  const base = y + middleOffset(ctx, s, size);
   if (stroke > 0) {
     ctx.lineJoin = 'round';
     ctx.lineWidth = stroke;

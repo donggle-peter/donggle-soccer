@@ -1,5 +1,5 @@
 /* 한 번 열면 인터넷 없이도 열리게 파일을 저장해 둔다. 새 버전을 올리면 VERSION 을 바꾼다 */
-const VERSION = 'donggle-v8';
+const VERSION = 'donggle-v9';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
   'assets/jua.ttf', 'assets/bgm.m4a', 'assets/babam.wav', 'assets/icon-192.png', 'assets/icon-512.png', 'assets/icon-maskable-512.png', 'assets/apple-touch-icon.png',
