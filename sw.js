@@ -1,8 +1,8 @@
 /* 한 번 열면 인터넷 없이도 열리게 파일을 저장해 둔다. 새 버전을 올리면 VERSION 을 바꾼다 */
-const VERSION = 'donggle-v4';
+const VERSION = 'donggle-v5';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
-  'assets/jua.ttf', 'assets/bgm.m4a', 'assets/babam.wav', 'assets/icon-192.png', 'assets/icon-512.png', 'assets/apple-touch-icon.png',
+  'assets/jua.ttf', 'assets/bgm.m4a', 'assets/babam.wav', 'assets/icon-192.png', 'assets/icon-512.png', 'assets/icon-maskable-512.png', 'assets/apple-touch-icon.png',
   'js/app.js', 'js/core.js', 'js/sound.js',
   'js/data/raw.js', 'js/data/items.js', 'js/data/teams.js', 'js/data/legends.js', 'js/data/tournament.js', 'js/data/store.js',
   'js/game/engine.js', 'js/game/draw.js', 'js/game/render.js', 'js/game/tutorial.js',
