@@ -120,7 +120,8 @@ function ItemCard(app, item, msg) {
 
 function HatShopTab(app, st, msg) {
   const store = app.store;
-  const hats = Hats.filter((x) => x.shop && x !== Hat.NONE);
+  // 싼 것부터, 비싼 것은 뒤로
+  const hats = Hats.filter((x) => x.shop && x !== Hat.NONE).sort((a, b) => a.price - b.price);
   st.pick ??= hats[0].name;
   const pick = Hat[st.pick];
   const owns = store.ownsHat(pick);

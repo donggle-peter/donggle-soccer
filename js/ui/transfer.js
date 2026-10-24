@@ -15,8 +15,8 @@ const PAGE = 60;
 
 /** 정렬 */
 const SORTS = [
-  ['ovrHigh', '오버롤 높은 순'], ['ovrLow', '오버롤 낮은 순'], ['value', '가성비 좋은 순'],
-  ['priceLow', '가격 낮은 순'], ['priceHigh', '가격 높은 순'],
+  ['ovrHigh', '오버롤 높은 순'], ['ovrLow', '오버롤 낮은 순'], ['priceHigh', '가격 높은 순'],
+  ['priceLow', '가격 낮은 순'], ['value', '가성비 좋은 순'],
 ];
 const sortLabel = (k) => SORTS.find((x) => x[0] === k)[1];
 
