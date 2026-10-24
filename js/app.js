@@ -1,7 +1,7 @@
 import { Store } from './data/store.js';
 import { Roster } from './data/teams.js';
 import { MatchSetup, MatchOutcome } from './game/engine.js';
-import { setScale, paintCanvases, h } from './ui/kit.js';
+import { setScale, paintCanvases } from './ui/kit.js';
 import { css } from './core.js';
 import { Sound } from './sound.js';
 import { MenuScreen } from './ui/menu.js';
@@ -145,22 +145,15 @@ export function quitMatch(setup, kind) {
 
 /* ───────── 화면 크기: 세로 576 (가로 최소 1024) 가상 단위 ───────── */
 
-const probe = h('div', { style: 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)' });
-document.body.append(probe);
-
+/* 화면 끝(노치·카메라 구멍 자리)까지 꽉 채워 그린다 */
 function layout() {
-  const cs = getComputedStyle(probe);
-  // 안드로이드 앱 안에서는 예전 앱처럼 카메라 구멍 자리까지 화면을 꽉 채운다
-  const edge = !!globalThis.AndroidSave;
-  const L = edge ? 0 : parseFloat(cs.paddingLeft) || 0, R = edge ? 0 : parseFloat(cs.paddingRight) || 0;
-  const T = edge ? 0 : parseFloat(cs.paddingTop) || 0, B = edge ? 0 : parseFloat(cs.paddingBottom) || 0;
-  const W = window.innerWidth - L - R, H = window.innerHeight - T - B;
+  const W = window.innerWidth, H = window.innerHeight;
   const u = Math.min(H / 576, W / 1024);
   app.vw = W / u;
   stage.style.width = `${app.vw}px`;
   stage.style.transform = `scale(${u})`;
-  stage.style.left = `${L}px`;
-  stage.style.top = `${T + (H - 576 * u) / 2}px`;
+  stage.style.left = '0px';
+  stage.style.top = `${(H - 576 * u) / 2}px`;
   setScale(u);
   paintCanvases(stage);
 }
