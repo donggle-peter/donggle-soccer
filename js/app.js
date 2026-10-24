@@ -187,6 +187,6 @@ async function boot() {
   layout();
   app.go('menu');
   requestAnimationFrame(frame);
-  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+  if ('serviceWorker' in navigator && location.protocol === 'https:' && !globalThis.AndroidSave) navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 boot();

@@ -7,6 +7,9 @@ export const Sound = {
 
   init(store) {
     this.store = store;
+    // 안드로이드 앱 안에서는 앱이 소리를 낸다 (배경 음악·빠빰!)
+    this.native = globalThis.AndroidSound ?? null;
+    if (this.native) { this.native.setMusic(store.music); return; }
     this.bgm = new Audio('assets/bgm.m4a');
     this.bgm.loop = true;
     this.bgm.volume = 0.55;
@@ -28,18 +31,21 @@ export const Sound = {
   get musicOn() { return this.store?.music ?? true; },
 
   resume() {
+    if (this.native) return;
     if (!this.unlocked || !this.musicOn || document.hidden) return;
     this.bgm.play().catch(() => {});
   },
-  pause() { this.bgm?.pause(); },
+  pause() { if (!this.native) this.bgm?.pause(); },
 
   toggleMusic() {
     this.store.setMusic(!this.store.music);
+    if (this.native) { this.native.setMusic(this.store.music); return; }
     if (this.store.music) this.resume(); else this.pause();
   },
 
   /** 행운 상자·선수 뽑기 "빠빰!" */
   babam() {
+    if (this.native) { this.native.babam(); return; }
     if (!this.unlocked) return;
     try {
       const a = this.fx.cloneNode();

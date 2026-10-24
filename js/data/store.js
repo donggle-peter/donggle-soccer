@@ -21,7 +21,13 @@ export class Store {
     this.random = new Rng();
     this.listeners = new Set();
     let s = {};
-    try { s = JSON.parse(storage?.getItem(KEY) ?? '{}') ?? {}; } catch { s = {}; }
+    let raw = storage?.getItem(KEY) ?? null;
+    // 안드로이드 앱 안에서 처음 켜면: 예전 앱 버전의 저장 기록(코인·선수·진화…)을 이어받는다
+    let migrated = false;
+    if (raw == null && globalThis.AndroidSave?.legacy) {
+      try { raw = globalThis.AndroidSave.legacy() || null; migrated = raw != null; } catch { raw = null; }
+    }
+    try { s = JSON.parse(raw ?? '{}') ?? {}; } catch { s = {}; }
     this.coins = s.coins ?? 1500;
     this.matches = s.matches ?? 0;
     this.wins = s.wins ?? 0;
@@ -65,6 +71,7 @@ export class Store {
     this.nickname = s.nickname ?? '';
     /** 마지막으로 선수를 판 시각 (3일에 한 번) */
     this.lastSellAt = s.lastSellAt ?? 0;
+    if (migrated) this.save();
   }
 
   /* ───── 저장 · 알림 ───── */
