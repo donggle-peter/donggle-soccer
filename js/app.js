@@ -216,7 +216,17 @@ async function boot() {
   layout();
   app.go('menu');
   requestAnimationFrame(frame);
-  if ('serviceWorker' in navigator && location.protocol === 'https:' && !globalThis.AndroidSave) navigator.serviceWorker.register('sw.js').catch(() => {});
+  if ('serviceWorker' in navigator && location.protocol === 'https:' && !globalThis.AndroidSave) {
+    // 새 버전을 받으면 한 번만 새로고침해서 바로 새 버전으로 (처음 설치할 때는 새로고침 안 함)
+    const hadController = !!navigator.serviceWorker.controller;
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadController || reloaded || shut) return;
+      reloaded = true;
+      location.reload();
+    });
+    navigator.serviceWorker.register('sw.js').then((r) => r.update()).catch(() => {});
+  }
   checkAlive();
 }
 boot();
