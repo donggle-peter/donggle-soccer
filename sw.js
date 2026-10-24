@@ -1,5 +1,5 @@
 /* 한 번 열면 인터넷 없이도 열리게 파일을 저장해 둔다. 새 버전을 올리면 VERSION 을 바꾼다 */
-const VERSION = 'donggle-v5';
+const VERSION = 'donggle-v6';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
   'assets/jua.ttf', 'assets/bgm.m4a', 'assets/babam.wav', 'assets/icon-192.png', 'assets/icon-512.png', 'assets/icon-maskable-512.png', 'assets/apple-touch-icon.png',
@@ -18,14 +18,20 @@ self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
 
-// 인터넷이 되면 새 파일, 안 되면 저장해 둔 파일
+// 인터넷이 되면 새 파일, 안 되면 저장해 둔 파일.
+// 서버가 없다고(404 등) 하면 저장해 둔 파일로 열어서, 게임이 "서비스 종료"를 알아채고 스스로 지울 수 있게 한다.
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  // 살아 있는지 확인하는 파일은 저장하지 않고 늘 서버에 직접 물어본다
+  if (new URL(e.request.url).pathname.endsWith('/alive.json')) return;
   e.respondWith(
-    fetch(e.request).then((res) => {
-      const copy = res.clone();
-      caches.open(VERSION).then((c) => c.put(e.request, copy));
-      return res;
+    fetch(e.request).then(async (res) => {
+      if (res.ok) {
+        const copy = res.clone();
+        caches.open(VERSION).then((c) => c.put(e.request, copy));
+        return res;
+      }
+      return (await caches.match(e.request, { ignoreSearch: true })) ?? res;
     }).catch(() => caches.match(e.request, { ignoreSearch: true })),
   );
 });

@@ -1,7 +1,7 @@
 import { Store } from './data/store.js';
 import { Roster } from './data/teams.js';
 import { MatchSetup, MatchOutcome } from './game/engine.js';
-import { setScale, paintCanvases } from './ui/kit.js';
+import { setScale, paintCanvases, h } from './ui/kit.js';
 import { css } from './core.js';
 import { Sound } from './sound.js';
 import { MenuScreen } from './ui/menu.js';
@@ -177,11 +177,46 @@ function frame(now) {
 globalThis.__donggle = { app, store };
 
 /* 글꼴을 다 받은 뒤 시작 (안 그러면 첫 화면 글씨가 다른 글꼴로 그려짐) */
+/* ───────── 서비스 종료 확인 ─────────
+ * 인터넷이 될 때 열면 GitHub 에 alive.json 이 있는지 물어본다.
+ * 없으면(저장소·Pages 를 내렸으면) 또는 { "alive": false } 면, 이 휴대폰에 저장된 게임 파일과 기록을 지우고 종료 화면을 보여 준다.
+ * 인터넷이 안 되면 확인하지 않고 그냥 연다. 안드로이드 앱과 이 Mac(로컬)에서는 확인하지 않는다.
+ */
+const CAN_SHUT = (location.protocol === 'https:' || globalThis.__aliveTest) && !globalThis.AndroidSave;
+let shut = false;
+
+async function checkAlive() {
+  if (!CAN_SHUT || shut) return;
+  let res;
+  try { res = await fetch(`alive.json?t=${Date.now()}`, { cache: 'no-store' }); } catch { return; } // 인터넷 없음
+  let dead = res.status === 404 || res.status === 410;
+  if (res.ok) { try { dead = (await res.json()).alive === false; } catch { dead = false; } }
+  if (dead) shutDown();
+}
+
+async function shutDown() {
+  shut = true;
+  app.onFrame = null;
+  app.onBack = null;
+  try { localStorage.clear(); } catch { /* 이미 비었음 */ }
+  try { for (const k of await caches.keys()) await caches.delete(k); } catch { /* 저장소 없음 */ }
+  try { for (const r of (await navigator.serviceWorker?.getRegistrations()) ?? []) await r.unregister(); } catch { /* 없음 */ }
+  stage.replaceChildren(h('div', { class: 'screen center', style: { background: '#6ec3ff', flexDirection: 'column', gap: '14px', textAlign: 'center' } },
+    h('div', { style: { fontSize: '72px' } }, '👋'),
+    h('div', { style: { fontSize: '40px' } }, '동글동글 사커 서비스가 종료됐어요'),
+    h('div', { style: { fontSize: '22px', color: 'rgba(43,33,80,0.7)' } }, '그동안 함께 뛰어 줘서 고마워요!'),
+    h('div', { style: { fontSize: '18px', color: 'rgba(43,33,80,0.6)' } }, '이 휴대폰에 저장된 게임과 기록은 지웠어요. 홈 화면 아이콘도 지워 주세요.')));
+  document.body.style.background = '#6ec3ff';
+}
+
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkAlive(); });
+
 async function boot() {
   try { await document.fonts.load('20px Jua'); } catch { /* 그래도 시작 */ }
   layout();
   app.go('menu');
   requestAnimationFrame(frame);
   if ('serviceWorker' in navigator && location.protocol === 'https:' && !globalThis.AndroidSave) navigator.serviceWorker.register('sw.js').catch(() => {});
+  checkAlive();
 }
 boot();
