@@ -20,7 +20,7 @@ export function ShopScreen(app, st) {
   st.tab ??= 0;
   const root = div({ class: 'screen' });
   const msg = (m) => showToast(root, m);
-  const body = st.tab === 0 ? ItemsTab(app, msg, () => lucky(app, root, msg)) : st.tab === 1 ? HatShopTab(app, st, msg) : BagTab(app, st, msg);
+  const body = st.tab === 0 ? ItemsTab(app, msg, () => lucky(app, root, msg)) : st.tab === 1 ? HatShopTab(app, st, msg) : st.tab === 2 ? BagTab(app, st, msg) : CouponTab(app, msg);
   root.append(
     DotsBackground(0xffffe1ee),
     col({ position: 'absolute', inset: 0 },
@@ -28,7 +28,8 @@ export function ShopScreen(app, st) {
       row({ padding: '10px 16px 0', gap: 10 },
         TabChip('⬆️ 아이템 강화', st.tab === 0, () => { st.tab = 0; app.render(); }),
         TabChip('🧢 머리 장식', st.tab === 1, () => { st.tab = 1; app.render(); }),
-        TabChip('🎒 가방', st.tab === 2, () => { st.tab = 2; app.render(); })),
+        TabChip('🎒 가방', st.tab === 2, () => { st.tab = 2; app.render(); }),
+        TabChip('🎟️ 쿠폰', st.tab === 3, () => { st.tab = 3; app.render(); })),
       div({ style: { flex: 1, minHeight: 0, padding: '8px 16px 12px', display: 'flex' } }, body)));
   return root;
 }
@@ -247,4 +248,46 @@ function HatCard(hh, wearing, onClick) {
         Txt(hh.label, 15),
         Txt(wearing ? '✓ 착용 중' : '보유', 11, wearing ? 0xff2bb24c : fade(0.6)),
         space(3))));
+}
+
+/* ───────────── 쿠폰 ───────────── */
+
+function CouponTab(app, msg) {
+  const store = app.store;
+  const input = h('input', { class: 'name-input', placeholder: '쿠폰 번호를 입력해요', maxlength: '20', autocapitalize: 'characters', autocomplete: 'off', spellcheck: 'false', enterkeyhint: 'done',
+    style: { width: 420, height: 60, fontSize: 30, textAlign: 'center', letterSpacing: '2px' } });
+  const use = () => {
+    const code = input.value;
+    if (!code.trim()) { msg('쿠폰 번호를 입력해 주세요'); return; }
+    const r = store.redeemCoupon(code);
+    if (!r.ok) { msg(r.reason === 'used' ? '이미 사용한 쿠폰이에요' : '없는 쿠폰 번호예요. 다시 확인해 주세요'); return; }
+    Sound.babam();
+    queueMicrotask(() => {
+      const screen = document.querySelector('#stage > .screen');
+      const pop = div({ class: 'dim', style: { background: css(INK, 0.45) }, onClick: () => pop.remove() },
+        col({ alignItems: 'center' },
+          OTxt('쿠폰 사용!', 80, Gold, { strokeWidth: 13 }),
+          space(6),
+          OTxt(`🪙 +${r.amount.toLocaleString('en-US')} 코인`, 44, WHITE, { strokeWidth: 9 })));
+      pop.firstChild.animate([{ transform: 'scale(0.2)' }, { transform: 'scale(1.12)', offset: 0.55 }, { transform: 'scale(0.96)', offset: 0.8 }, { transform: 'scale(1)' }], { duration: 520, easing: 'ease-out' });
+      screen?.append(pop);
+      setTimeout(() => pop.remove(), 1900);
+    });
+  };
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { input.blur(); use(); } e.stopPropagation(); });
+  input.addEventListener('pointerdown', (e) => e.stopPropagation());
+  const used = store.usedCoupons.size;
+  return div({ class: 'center', style: { flex: 1 } },
+    Panel({ w: 640, h: 360 },
+      col({ height: '100%', padding: '20px 30px', alignItems: 'center' },
+        Txt('🎟️', 64),
+        OTxt('쿠폰 입력', 38, Gold, { strokeWidth: 8 }),
+        space(6),
+        Txt('받은 쿠폰 번호를 넣으면 코인을 드려요 (쿠폰마다 한 번씩)', 16, fade(0.6)),
+        space(14),
+        input,
+        space(14),
+        TextButton('🎁 쿠폰 사용하기', use, GoldG, 260, 52, 22),
+        div({ style: { flex: 1 } }),
+        Txt(used ? `지금까지 쓴 쿠폰 ${used}장` : '아직 쓴 쿠폰이 없어요', 14, fade(0.5)))));
 }

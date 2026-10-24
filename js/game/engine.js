@@ -14,13 +14,13 @@ export const Btn = { SHOOT: 0, PASS: 1, DASH: 2, ITEM: 3 };
 
 /** 난이도: 상대(컴퓨터) 팀이 얼마나 잘하나. 숫자를 바꾸면 경기 전체 난이도가 바뀐다 */
 export const AI = {
-  speedBase: 9.8, speedPerRating: 0.35,      // 달리기 (내 팀은 10.2 + 0.2 × 실력)
-  tackleRate: 1.4, tackleRatePerRating: 0.3,  // 공 가진 상대에게 얼마나 자주 태클
-  tackleWin: 0.35, tackleWinPerRating: 0.06,  // 태클 성공 확률
-  gkSave: 0.58, gkSavePerRating: 0.06,        // 상대 골키퍼 선방
-  shotError: 1.75,                            // 상대 슛 빗나감 (작을수록 정확)
-  humanTackleWin: 0.55,                       // 내 태클 성공 확률
-  humanShotSkill: 2.8,                        // 내 슛 정확도 (클수록 정확)
+  speedBase: 9.5, speedPerRating: 0.35,      // 달리기 (내 팀은 10.2 + 0.2 × 실력)
+  tackleRate: 1.2, tackleRatePerRating: 0.28, // 공 가진 상대에게 얼마나 자주 태클
+  tackleWin: 0.31, tackleWinPerRating: 0.06,  // 태클 성공 확률
+  gkSave: 0.54, gkSavePerRating: 0.06,        // 상대 골키퍼 선방
+  shotError: 1.8,                             // 상대 슛 빗나감 (작을수록 정확)
+  humanTackleWin: 0.6,                        // 내 태클 성공 확률
+  humanShotSkill: 3.0,                        // 내 슛 정확도 (클수록 정확)
 };
 export const Phase = { READY: 0, PLAY: 1, GOAL: 2, END: 3 };
 export const Stun = { NONE: 0, SLIP: 1, ICE: 2, KNOCK: 3, WHIFF: 4, DIVE: 5 };

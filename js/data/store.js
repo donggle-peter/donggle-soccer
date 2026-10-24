@@ -9,6 +9,14 @@ export const TUTORIAL_REWARD = 500;
 /** 주장이 있으면 팀 전체 오버롤 +1 */
 export const CAPTAIN_BONUS = 1;
 
+/** 쿠폰: 띄어쓰기·대소문자 상관없이 입력. 기기마다 한 번씩만 쓸 수 있다 */
+export const COUPONS = {
+  'SH123!?': 1000,
+  KIM987: 5000,
+  '2468SOCCER': 20000,
+};
+const couponKey = (code) => code.replace(/\s+/g, '').toUpperCase();
+
 const KEY = 'donggle-soccer-save';
 
 /**
@@ -71,6 +79,8 @@ export class Store {
     this.nickname = s.nickname ?? '';
     /** 마지막으로 선수를 판 시각 (3일에 한 번) */
     this.lastSellAt = s.lastSellAt ?? 0;
+    /** 이미 쓴 쿠폰 */
+    this.usedCoupons = new Set(s.coupons ?? []);
     if (migrated) this.save();
   }
 
@@ -88,7 +98,7 @@ export class Store {
       hats: this.hatMask, equip: this.equipped?.name ?? null,
       legends: [...this.ownedLegends], lineup: Object.fromEntries(this.lineup), evo: Object.fromEntries(this.evolutions),
       formation: this.formation.name, captain: this.captain, music: this.music,
-      nickname: this.nickname, lastSellAt: this.lastSellAt,
+      nickname: this.nickname, lastSellAt: this.lastSellAt, coupons: [...this.usedCoupons],
     };
     try { this.storage?.setItem(KEY, JSON.stringify(s)); } catch { /* 저장 공간이 없으면 이번 판만 */ }
     this.listeners.forEach((fn) => fn());
@@ -197,6 +207,18 @@ export class Store {
     this.lastSellAt = now;
     this.save();
     return got;
+  }
+
+  /** 쿠폰 쓰기. { ok, amount } 또는 { ok: false, reason: 'none' | 'used' } */
+  redeemCoupon(code) {
+    const k = couponKey(code);
+    const amount = COUPONS[k];
+    if (amount == null) return { ok: false, reason: 'none' };
+    if (this.usedCoupons.has(k)) return { ok: false, reason: 'used' };
+    this.usedCoupons.add(k);
+    this.coins += amount;
+    this.save();
+    return { ok: true, amount };
   }
 
   setNickname(n) { this.nickname = [...n.trim()].slice(0, 8).join(''); this.save(); }
