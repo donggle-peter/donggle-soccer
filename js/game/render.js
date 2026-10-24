@@ -427,7 +427,8 @@ function drawHud(ctx, e, vw, touch) {
     glow(ctx, cx, cy, L.itemR * 1.6 * pulse, 'rgba(255,246,160,0.87)');
   }
   circle(ctx, cx, cy + 6, L.itemR + 4); ctx.fillStyle = css(INK); ctx.fill();
-  circle(ctx, cx, cy + (touch.down[Btn.ITEM] ? 4 : 0), L.itemR); ctx.fillStyle = held ? '#fff' : 'rgba(255,255,255,0.55)'; ctx.fill();
+  // 빈 칸도 불투명하게 칠해야 아래 그림자가 비쳐서 동그라미가 아래로 밀려 보이지 않는다
+  circle(ctx, cx, cy + (touch.down[Btn.ITEM] ? 4 : 0), L.itemR); ctx.fillStyle = held ? '#fff' : css(0xffdcd6ec); ctx.fill();
   circle(ctx, cx, cy, L.itemR); ctx.strokeStyle = css(held ? 0xffffb627 : INK); ctx.lineWidth = 5; ctx.stroke();
   circle(ctx, cx, cy, L.itemR + 4); ctx.strokeStyle = css(INK); ctx.lineWidth = 3; ctx.stroke();
   if (held) label(ctx, held.emoji, cx, cy, 38);
