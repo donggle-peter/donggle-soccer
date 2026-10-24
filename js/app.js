@@ -150,8 +150,10 @@ document.body.append(probe);
 
 function layout() {
   const cs = getComputedStyle(probe);
-  const L = parseFloat(cs.paddingLeft) || 0, R = parseFloat(cs.paddingRight) || 0;
-  const T = parseFloat(cs.paddingTop) || 0, B = parseFloat(cs.paddingBottom) || 0;
+  // 안드로이드 앱 안에서는 예전 앱처럼 카메라 구멍 자리까지 화면을 꽉 채운다
+  const edge = !!globalThis.AndroidSave;
+  const L = edge ? 0 : parseFloat(cs.paddingLeft) || 0, R = edge ? 0 : parseFloat(cs.paddingRight) || 0;
+  const T = edge ? 0 : parseFloat(cs.paddingTop) || 0, B = edge ? 0 : parseFloat(cs.paddingBottom) || 0;
   const W = window.innerWidth - L - R, H = window.innerHeight - T - B;
   const u = Math.min(H / 576, W / 1024);
   app.vw = W / u;
