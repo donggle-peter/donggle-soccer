@@ -6,6 +6,7 @@ import { ItemTypes, Items } from '../data/items.js';
 import { TUTORIAL_LESSONS, TUTORIAL_REWARD } from '../data/store.js';
 import { css, comma, INK, WHITE } from '../core.js';
 import { Sound } from '../sound.js';
+import { APP_VERSION } from '../version.js';
 
 const fade = (a) => css(INK, a);
 
@@ -78,6 +79,8 @@ export function MenuScreen(app, st) {
     topRight,
     Logo({ position: 'absolute', left: 36, top: 112 }),
     menu,
+    // 지금 열린 버전 (웹으로 열었는지 앱으로 열었는지도)
+    div({ class: 'abs', style: { right: 14, bottom: 8 } }, OTxt(`v${APP_VERSION} · ${globalThis.AndroidSave ? '앱' : '웹'}`, 15, WHITE, { strokeWidth: 4 })),
     st.showRecord ? RecordDialog(store, () => { st.showRecord = false; app.render(); }) : null,
     !store.tutorialAsked ? TutorialAskDialog(
       () => { store.markTutorialAsked(); app.go('tutorial'); },
