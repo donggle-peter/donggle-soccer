@@ -70,8 +70,55 @@ function middleOffset(ctx, s, size) {
   return v;
 }
 
+/* ───────────── 이모지 ─────────────
+ * 이모지는 기기마다 그림 위치가 달라서(특히 아이폰) 글자처럼 그리면 가운데에서 밀린다.
+ * 한 번 따로 그려 보고 실제로 칠해진 픽셀 범위를 찾아, 그 가운데를 정확히 (x, y) 에 놓는다.
+ */
+const EMOJI_ONLY = /^(?:[\p{Extended_Pictographic}\p{Regional_Indicator}\u200D\uFE0F\u20E3#*0-9]|\p{Emoji_Modifier})+$/u;
+export const isEmojiOnly = (s) => EMOJI_ONLY.test(s) && /\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(s);
+const emojiCache = new Map();
+function emojiSprite(s) {
+  let sp = emojiCache.get(s);
+  if (sp) return sp;
+  const R = 192; // 이 크기로 크게 그려 두고 줄여서 쓴다 (흐려지지 않게)
+  const c = document.createElement('canvas');
+  c.width = c.height = R * 2;
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.font = `${R}px ${FONT}`;
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillStyle = '#000';
+  g.fillText(s, R, R);
+  const data = g.getImageData(0, 0, R * 2, R * 2).data;
+  let x0 = R * 2, y0 = R * 2, x1 = -1, y1 = -1;
+  for (let y = 0; y < R * 2; y++) for (let x = 0; x < R * 2; x++) {
+    if (data[(y * R * 2 + x) * 4 + 3] > 8) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  }
+  sp = x1 < 0 ? null : { c, x0, y0, w: x1 - x0 + 1, h: y1 - y0 + 1, R };
+  if (sp) emojiCache.set(s, sp);
+  return sp;
+}
+
+/** 이모지를 (x, y) 에 가운데 맞춰 그린다. size 는 글자 크기 (실제 그림은 그보다 조금 작다) */
+export function drawEmoji(ctx, s, x, y, size, align = 'center', alpha = 1) {
+  const sp = typeof document !== 'undefined' ? emojiSprite(s) : null;
+  if (!sp) {
+    ctx.font = `${size}px ${FONT}`; ctx.textAlign = align; ctx.textBaseline = 'middle';
+    ctx.globalAlpha = alpha; ctx.fillText(s, x, y); ctx.globalAlpha = 1;
+    return;
+  }
+  const k = size / sp.R; // 글자로 그렸을 때와 같은 크기
+  const w = sp.w * k, hh = sp.h * k;
+  const left = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  const prev = ctx.globalAlpha;
+  ctx.globalAlpha = prev * alpha;
+  ctx.drawImage(sp.c, sp.x0, sp.y0, sp.w, sp.h, left, y - hh / 2, w, hh);
+  ctx.globalAlpha = prev;
+}
+
 /** 외곽선 있는 글자. y 는 글자 세로 가운데 기준. align: 'center' | 'left' | 'right' */
 export function label(ctx, s, x, y, size, color = WHITE, stroke = 0, strokeColor = INK, align = 'center', alpha = 1) {
+  if (isEmojiOnly(s)) return drawEmoji(ctx, s, x, y, size, align, alpha);
   if (hasSymbols(s)) return labelWithSymbols(ctx, s, x, y, size, color, stroke, strokeColor, align, alpha);
   ctx.font = `${size}px ${FONT}`;
   ctx.textAlign = align;
