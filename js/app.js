@@ -92,16 +92,22 @@ export function applyResult(setup, kind, o, forfeit) {
     const wc = store.worldCup;
     if (wc) {
       const before = wc.stage;
+      const third = wc.inThirdPlace; // 이번 경기가 3·4위전이었나
       wc.applyMyResult(o.home, o.away, o.homeWonPk, store.random);
       if (wc.finished && wc.champion === wc.myTeam) {
         coins += 1500;
         lines.push('🏆 월드컵 우승!! 보너스 🪙1500');
         store.addTrophy(true);
+      } else if (wc.finished && before === 6 && third) {
+        const won = wc.third === wc.myTeam;
+        coins += won ? 300 : 150;
+        lines.push(won ? '🥉 월드컵 3위! 보너스 🪙300' : '4위로 마무리 · 보너스 🪙150');
       } else if (wc.finished && before === 6) {
         coins += 500;
         lines.push('🥈 준우승! 보너스 🪙500');
       } else if (wc.eliminated) lines.push(before < 3 ? '아쉽게 조별리그 탈락...' : `${wc.stageName(before)}에서 탈락...`);
       else if (before === 2 && wc.stage === 3) lines.push('🎉 16강 진출!');
+      else if (before === 5 && wc.inThirdPlace) { lines.push('4강에서 졌지만 3·4위전이 남았어요!'); coins += 100; }
       else if (before >= 3) { lines.push(`🎉 ${wc.stageName(wc.stage)} 진출!`); coins += 100 * (before - 2); }
       else {
         const g = wc.groupOf(wc.myTeam);

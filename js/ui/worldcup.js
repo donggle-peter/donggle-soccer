@@ -59,19 +59,19 @@ function Hub(app, st, wc) {
       TabChip('토너먼트', st.tab === 1, () => { st.tab = 1; app.render(); })),
     st.tab === 0
       ? div({ class: 'abs', style: { left: 0, right: 0, bottom: 10, display: 'flex', justifyContent: 'center' } }, MatchCard(app, wc, true))
-      : div({ class: 'abs', style: { left: 0, right: 0, top: 372, display: 'flex', justifyContent: 'center' } }, MatchCard(app, wc, false)));
+      : div({ class: 'abs', style: { left: 0, right: 0, top: 414, display: 'flex', justifyContent: 'center' } }, MatchCard(app, wc, false)));
 }
 
 function MatchCard(app, wc, wide) {
   const store = app.store;
   const me = Teams.get(wc.myTeam);
-  const [w, hh] = wide ? [620, 118] : [340, 160];
+  const [w, hh] = wide ? [620, 118] : [340, 148];
   let body;
   if (wc.finished) {
     const champ = wc.champion ? Teams.get(wc.champion) : null;
     body = col({ height: '100%', padding: 10, alignItems: 'center', justifyContent: 'space-evenly' },
       wc.champion === wc.myTeam ? OTxt(`🏆 ${me.name} 우승!!`, 28, Gold, { strokeWidth: 6 })
-        : Txt(`${me.emoji} ${me.name} ${wc.eliminated ? '탈락...' : '🥈 준우승!'} · 우승 ${champ?.emoji ?? ''} ${champ?.name ?? ''}`, 19, INK, { align: 'center' }),
+        : Txt(`${me.emoji} ${me.name} ${wc.eliminated ? '탈락...' : wc.third === wc.myTeam ? '🥉 3위!' : wc.inThirdPlace ? '4위' : '🥈 준우승!'} · 우승 ${champ?.emoji ?? ''} ${champ?.name ?? ''}`, 19, INK, { align: 'center' }),
       TextButton('🔄 새 월드컵 시작', () => store.setWorldCup(null), GoldG, 250, 48, 20));
   } else {
     const f = wc.myFixture();
@@ -194,6 +194,10 @@ function BracketView(wc, w) {
   }
   const [fa, fb] = slotsOf(wc, wc.ko[3]?.[0]);
   out.push(Slot(fl, fY, slotW, fa), Slot(fr, fY, slotW, fb));
+  // 3·4위전 (4강에서 진 팀끼리) — 결승 아래
+  const [ta, tb] = slotsOf(wc, wc.ko[3]?.[1]);
+  out.push(div({ class: 'abs', style: { left: w / 2 - 60, top: 356, width: 120, textAlign: 'center' } }, Txt('🥉 3·4위전', 14, 'rgba(255,255,255,0.85)')));
+  out.push(Slot(fl, 374, slotW, ta), Slot(fr, 374, slotW, tb));
   return div({ class: 'fill' }, out);
 }
 

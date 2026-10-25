@@ -53,7 +53,7 @@ export function standings(ids, fixtures) {
 /* ─────────────────────── 월드컵 ─────────────────────── */
 
 export class WorldCup {
-  constructor(myTeam, groups, groupRounds, ko, stage, eliminated, champion) {
+  constructor(myTeam, groups, groupRounds, ko, stage, eliminated, champion, third = null) {
     this.myTeam = myTeam;
     this.groups = groups;
     /** 조별리그 라운드(0..2)별 16경기 */
@@ -64,11 +64,17 @@ export class WorldCup {
     this.stage = stage;
     this.eliminated = eliminated;
     this.champion = champion;
+    /** 3·4위전 이긴 팀 (3위) */
+    this.third = third;
   }
+
+  /** 6단계 = 결승 + 3·4위전. 내가 3·4위전에 나가나 */
+  get inThirdPlace() { return this.ko[3]?.[1]?.has(this.myTeam) ?? false; }
   get finished() { return this.stage >= 7; }
 
   stageName(s = this.stage) {
     if (s <= 2) return `조별리그 ${s + 1}차전`;
+    if (s === 6 && this.inThirdPlace) return '3·4위전';
     return ['16강', '8강', '4강', '결승'][s - 3] ?? '종료';
   }
 
@@ -98,11 +104,17 @@ export class WorldCup {
         new Fixture(w(0), ru(1)), new Fixture(w(2), ru(3)), new Fixture(w(4), ru(5)), new Fixture(w(6), ru(7)),
         new Fixture(w(1), ru(0)), new Fixture(w(3), ru(2)), new Fixture(w(5), ru(4)), new Fixture(w(7), ru(6)),
       ]);
-    } else if (this.stage >= 4 && this.stage <= 6) {
+    } else if (this.stage === 4 || this.stage === 5) {
       const prev = this.ko[this.stage - 4].map((f) => f.winner());
       this.ko.push(chunked(prev, 2).map((p) => new Fixture(p[0], p[1])));
+    } else if (this.stage === 6) {
+      // 결승 (4강 이긴 팀끼리) + 3·4위전 (4강 진 팀끼리)
+      const sf = this.ko[2];
+      const loser = (f) => (f.winner() === f.home ? f.away : f.home);
+      this.ko.push([new Fixture(sf[0].winner(), sf[1].winner()), new Fixture(loser(sf[0]), loser(sf[1]))]);
     } else if (this.stage === 7) {
       this.champion = this.ko[3][0].winner();
+      this.third = this.ko[3][1]?.winner() ?? null;
     }
     if (!this.eliminated && !this.finished && !this.currentFixtures().some((f) => f.has(this.myTeam))) {
       this.eliminated = true;
@@ -112,10 +124,10 @@ export class WorldCup {
   }
 
   toJSON() {
-    return { my: this.myTeam, groups: this.groups, gr: this.groupRounds, ko: this.ko, stage: this.stage, elim: this.eliminated, champ: this.champion ?? '' };
+    return { my: this.myTeam, groups: this.groups, gr: this.groupRounds, ko: this.ko, stage: this.stage, elim: this.eliminated, champ: this.champion ?? '', third: this.third ?? '' };
   }
   static fromJSON(o) {
-    return new WorldCup(o.my, o.groups, o.gr.map((r) => r.map(Fixture.fromJSON)), o.ko.map((r) => r.map(Fixture.fromJSON)), o.stage, o.elim, o.champ || null);
+    return new WorldCup(o.my, o.groups, o.gr.map((r) => r.map(Fixture.fromJSON)), o.ko.map((r) => r.map(Fixture.fromJSON)), o.stage, o.elim, o.champ || null, o.third || null);
   }
   static create(myTeam, r) {
     const pots = chunked([...Teams.countries].sort((a, b) => b.rating - a.rating).map((t) => t.id), 8).map((p) => r.shuffled(p));
