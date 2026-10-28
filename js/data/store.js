@@ -81,6 +81,8 @@ export class Store {
     this.lastSellAt = s.lastSellAt ?? 0;
     /** 이미 쓴 쿠폰 */
     this.usedCoupons = new Set(s.coupons ?? []);
+    /** 보상을 받은 이벤트 */
+    this.claimedEvents = new Set(s.events ?? []);
     if (migrated) this.save();
   }
 
@@ -99,6 +101,7 @@ export class Store {
       legends: [...this.ownedLegends], lineup: Object.fromEntries(this.lineup), evo: Object.fromEntries(this.evolutions),
       formation: this.formation.name, captain: this.captain, music: this.music,
       nickname: this.nickname, lastSellAt: this.lastSellAt, coupons: [...this.usedCoupons],
+      events: [...this.claimedEvents],
     };
     try { this.storage?.setItem(KEY, JSON.stringify(s)); } catch { /* 저장 공간이 없으면 이번 판만 */ }
     this.listeners.forEach((fn) => fn());
@@ -219,6 +222,22 @@ export class Store {
     this.coins += amount;
     this.save();
     return { ok: true, amount };
+  }
+
+  /** 이벤트 보상: 'claimed' 받음 · 'ready' 받을 수 있음 · 'progress' 아직 */
+  eventState(ev) {
+    if (this.claimedEvents.has(ev.id)) return 'claimed';
+    return this.matches >= ev.needMatches ? 'ready' : 'progress';
+  }
+  /** 이벤트 보상 받기 (이미 가진 선수면 그 진화 단계로 올려 준다) */
+  claimEvent(ev, now = Date.now()) {
+    if (now >= ev.end || this.eventState(ev) !== 'ready') return false;
+    const l = ev.legend;
+    this.ownedLegends.add(l.id);
+    this.evolutions.set(l.id, Math.max(this.evoOf(l), ev.evo));
+    this.claimedEvents.add(ev.id);
+    this.save();
+    return true;
   }
 
   setNickname(n) { this.nickname = [...n.trim()].slice(0, 8).join(''); this.save(); }

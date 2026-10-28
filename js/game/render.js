@@ -1,4 +1,4 @@
-import { FL, FW, GOAL_HALF, GOAL_H, Phase, Stun, Fx, Btn } from './engine.js';
+import { FL, FW, GOAL_HALF, GOAL_H, Phase, Stun, Fx, Btn, KickPower } from './engine.js';
 import { drawMongi, drawBall, drawItemBox, drawBanana, sparkle, label, textWidth, circle, oval, glow, Face } from './draw.js';
 import { css, withAlpha, Rng, clamp, INK, WHITE } from '../core.js';
 
@@ -431,6 +431,7 @@ function drawHud(ctx, e, vw, touch) {
   circle(ctx, cx, cy + (touch.down[Btn.ITEM] ? 4 : 0), L.itemR); ctx.fillStyle = held ? '#fff' : css(0xffdcd6ec); ctx.fill();
   circle(ctx, cx, cy, L.itemR); ctx.strokeStyle = css(held ? 0xffffb627 : INK); ctx.lineWidth = 5; ctx.stroke();
   circle(ctx, cx, cy, L.itemR + 4); ctx.strokeStyle = css(INK); ctx.lineWidth = 3; ctx.stroke();
+  if (e.charge) drawKickGauge(ctx, e, L, vw);
   if (held) label(ctx, held.emoji, cx, cy, 38);
   else if (e.armedFire[0]) label(ctx, '🔥', cx, cy, 30, WHITE, 0, INK, 'center', 0.6);
   else if (e.armedCurve[0]) label(ctx, '🌀', cx, cy, 30, WHITE, 0, INK, 'center', 0.6);
@@ -450,6 +451,45 @@ function drawHud(ctx, e, vw, touch) {
     ctx.translate(vw / 2, 260); ctx.scale(pop, pop); ctx.translate(-vw / 2, -260);
     label(ctx, b, vw / 2, 260, big ? 96 : 56, fill, big ? 14 : 10, INK, 'center', a);
     ctx.restore();
+  }
+}
+
+const POWER_ZONES = [[0, KickPower.low, 0xff5fd068, '살살'], [KickPower.low, KickPower.high, 0xffffd23f, '보통'], [KickPower.high, 1, 0xffff4f64, '세게!']];
+
+/** 슛·패스 힘 게이지: 화면 아래 가운데 막대 + 누르고 있는 버튼 둘레 링 */
+function drawKickGauge(ctx, e, L, vw) {
+  const p = e.chargeLevel;
+  const shot = e.charge.b === Btn.SHOOT;
+  const zone = POWER_ZONES[KickPower.zone(p)];
+  // 버튼 둘레 링
+  const [bx, by] = shot ? L.shoot : L.pass;
+  const rr = (shot ? L.shootR : L.passR) + 11;
+  const byy = by + 5;
+  ctx.beginPath(); ctx.arc(bx, byy, rr, 0, Math.PI * 2); ctx.strokeStyle = css(INK, 0.45); ctx.lineWidth = 9; ctx.stroke();
+  ctx.beginPath(); ctx.arc(bx, byy, rr, -Math.PI / 2, -Math.PI / 2 + p * Math.PI * 2);
+  ctx.strokeStyle = css(zone[2]); ctx.lineWidth = 9; ctx.lineCap = 'round'; ctx.stroke(); ctx.lineCap = 'butt';
+  // 막대
+  const w = 380, hh = 30, x = vw / 2 - w / 2, y = 520;
+  label(ctx, `${shot ? '⚽ 슛' : '👟 패스'} 힘 · ${zone[3]}`, vw / 2, y - 22, 20, WHITE, 5);
+  rrect(ctx, x - 6, y - 1, w + 12, hh + 12, 21); ctx.fillStyle = css(INK); ctx.fill();
+  rrect(ctx, x - 6, y - 6, w + 12, hh + 12, 21); ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = css(INK); ctx.lineWidth = 4; ctx.stroke();
+  ctx.save(); rrect(ctx, x, y, w, hh, 15); ctx.clip();
+  for (const [a, b, c] of POWER_ZONES) {
+    ctx.fillStyle = css(c, 0.28); ctx.fillRect(x + a * w, y, (b - a) * w, hh);
+    const end = Math.min(p, b);
+    if (end > a) { ctx.fillStyle = css(c); ctx.fillRect(x + a * w, y, (end - a) * w, hh); }
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(x, y + 3, p * w, 7);
+  ctx.restore();
+  ctx.strokeStyle = css(INK, 0.5); ctx.lineWidth = 2.5;
+  for (const v of [KickPower.low, KickPower.high]) { ctx.beginPath(); ctx.moveTo(x + v * w, y + 4); ctx.lineTo(x + v * w, y + hh - 4); ctx.stroke(); }
+  // 바늘
+  const nx = x + p * w;
+  ctx.beginPath(); ctx.moveTo(nx - 9, y - 14); ctx.lineTo(nx + 9, y - 14); ctx.lineTo(nx, y - 2); ctx.closePath();
+  ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = css(INK); ctx.lineWidth = 3; ctx.stroke();
+  if (p >= 1) {
+    glow(ctx, x + w + 4, y + hh / 2, 46 + Math.sin(e.time * 12) * 4, 'rgba(255,120,120,0.85)');
+    label(ctx, 'MAX!', x + w + 36, y + hh / 2, 20, 0xffffd23f, 5);
   }
 }
 

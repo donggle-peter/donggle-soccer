@@ -7,6 +7,7 @@ import { TUTORIAL_LESSONS, TUTORIAL_REWARD } from '../data/store.js';
 import { css, comma, INK, WHITE } from '../core.js';
 import { Sound } from '../sound.js';
 import { APP_VERSION } from '../version.js';
+import { activeEvents } from '../data/events.js';
 
 const fade = (a) => css(INK, a);
 
@@ -73,11 +74,24 @@ export function MenuScreen(app, st) {
       small('🔄', '이적시장', `선수 ${comma(Legends.TOTAL)}명`, GoldG, () => app.go('transfer'), store.ownedLegends.size === 0 ? 'NEW' : null),
       small('🛒', '상점', '강화 · 장식 · 가방', PinkG, () => app.go('shop'), canUpgrade ? '강화!' : null)));
 
+  // 이벤트 센터 (로고 아래, 왼쪽 여백은 오른쪽 메뉴와 같게)
+  const events = activeEvents();
+  const ready = events.some((e) => store.eventState(e) === 'ready');
+  const fresh = events.some((e) => store.eventState(e) !== 'claimed');
+  const eventBtn = div({ class: 'abs', style: { left: 32, top: 282, width: 330 } },
+    CandyButton(() => app.go('events'), PinkG, { w: '100%', h: 84, radius: 26 },
+      row({ width: '100%', height: '100%', padding: '0 16px', gap: 12 },
+        div({ class: 'center', style: { width: 56, height: 56, background: '#fff', borderRadius: '50%', border: `3.5px solid ${css(INK)}`, flex: 'none' } }, Txt('🎁', 32)),
+        col({ flex: 1 }, Txt('이벤트 센터', 26), Txt(events.length ? `진행 중 이벤트 ${events.length}개` : '진행 중 이벤트 없음', 13, fade(0.7))),
+        Txt('▶', 24))),
+    ready ? Badge('받기!') : fresh ? Badge('NEW') : null);
+
   return div({ class: 'screen' },
     Canvas('100%', '100%', (ctx, t, vw, vh) => drawMenuBackground(ctx, t, vw, vh, cast), { class: 'fill', anim: true }),
     levelChip,
     topRight,
     Logo({ position: 'absolute', left: 36, top: 112 }),
+    eventBtn,
     menu,
     // 지금 열린 버전 (웹으로 열었는지 앱으로 열었는지도)
     div({ class: 'abs', style: { right: 14, bottom: 8 } }, OTxt(`v${APP_VERSION} · ${globalThis.AndroidSave ? '앱' : '웹'}`, 15, WHITE, { strokeWidth: 4 })),

@@ -13,6 +13,7 @@ import { LeagueScreen } from './ui/league.js';
 import { ShopScreen } from './ui/shop.js';
 import { TransferScreen } from './ui/transfer.js';
 import { MyTeamScreen } from './ui/myteam.js';
+import { EventsScreen } from './ui/events.js';
 
 /* ───────── 앱: 화면 전환 · 화면 크기 맞춤 · 매 프레임 그리기 ───────── */
 
@@ -30,14 +31,14 @@ const VIEWS = {
   menu: MenuScreen, play: PlayScreen, quick: QuickScreen, result: ResultScreen,
   tutorial: TutorialScreen, guide: GuideScreen, tutorialPlay: TutorialPlayScreen,
   match: MatchScreen, worldcup: WorldCupScreen, league: LeagueScreen,
-  shop: ShopScreen, transfer: TransferScreen, team: MyTeamScreen,
+  shop: ShopScreen, transfer: TransferScreen, team: MyTeamScreen, events: EventsScreen,
 };
 
 /** 화면마다 뒤쪽 바탕색 (노치·여백에 보이는 색) */
 const BG = {
   menu: 0xff6ec3ff, play: 0xffd8f6cf, quick: 0xffddf6cf, result: 0xff2b2150, tutorial: 0xffe9f7ff, guide: 0xffffe9f2,
   tutorialPlay: 0xff5fb553, match: 0xff5fb553, worldcup: 0xff1c1347, league: 0xffc9f4e4, shop: 0xffffe9f2,
-  transfer: 0xff1c1347, team: 0xffdff0ff,
+  transfer: 0xff1c1347, team: 0xffdff0ff, events: 0xffffe9f2,
 };
 
 const stage = document.getElementById('stage');

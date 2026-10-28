@@ -1,2 +1,4 @@
 tools/*.png
 .DS_Store
+tools/cdp.mjs
+tools/mock_*.js

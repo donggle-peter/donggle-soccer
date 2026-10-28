@@ -12,6 +12,19 @@ const GRAV = 30;
 
 export const Btn = { SHOOT: 0, PASS: 1, DASH: 2, ITEM: 3 };
 
+/**
+ * 패스·슛 힘: 버튼을 누르고 있는 동안 0 → 1 로 차오르고(time 초면 가득), 손을 떼면 찬다.
+ * 0~low 살살 · low~high 보통 · high~1 세게. 보통 가운데쯤이 예전(누르면 바로 차던) 세기.
+ */
+export const KickPower = {
+  time: 0.8, low: 0.34, high: 0.72,
+  zone(p) { return p < this.low ? 0 : p < this.high ? 1 : 2; },
+  /** 공 빠르기 배율 (살살 0.78 ~ 세게 1.2) */
+  speedMul(p) { return p == null ? 1 : 0.78 + 0.42 * p; },
+  /** 슛 빗나감 배율: 살살은 조금 더 정확, 세게는 덜 정확 */
+  errorMul(p) { return p == null ? 1 : p < this.low ? 0.85 : p > this.high ? 1 + (p - this.high) * 1.6 : 1; },
+};
+
 /** 난이도: 상대(컴퓨터) 팀이 얼마나 잘하나. 숫자를 바꾸면 경기 전체 난이도가 바뀐다 */
 export const AI = {
   // 맨 처음(쉬운) 난이도
@@ -141,6 +154,10 @@ export class MatchEngine {
     this.shake = 0;
     this.joyX = 0; this.joyY = 0;
     this.pressed = [false, false, false, false];
+    /** 힘 모으는 중인 버튼 { b, t } (내 선수가 공을 가졌을 때만) */
+    this.charge = null;
+    /** 이번에 찰 힘 (0..1). null 이면 예전처럼 보통 세기 */
+    this.kickPower = null;
     this.chasers = [null, null];
     this.covers = [null, null];
     this.aiItemT = [1, 1];
@@ -163,6 +180,24 @@ export class MatchEngine {
     return !this.extra ? Math.min(90, Math.trunc(this.clock / this.setup.duration * 90)) : 90 + Math.min(30, Math.trunc((this.clock - this.setup.duration) / 45 * 30));
   }
   press(b) { this.pressed[b] = true; }
+
+  /** 슛·패스 버튼을 눌렀을 때: 공을 가졌으면 힘을 모으고, 아니면 바로 (태클·선수 교체) */
+  startCharge(b) {
+    if (this.phase === Phase.PLAY && this.human && this.ball.owner === this.human) this.charge = { b, t: 0 };
+    else this.press(b);
+  }
+  /** 손을 뗐을 때: 모은 힘으로 찬다 */
+  releaseCharge(b) {
+    const c = this.charge;
+    if (!c || c.b !== b) return;
+    this.charge = null;
+    this.kickPower = this.powerOf(c);
+    this.press(b);
+  }
+  cancelCharge() { this.charge = null; }
+  powerOf(c) { return clamp(c.t / KickPower.time, 0, 1); }
+  /** 지금 모은 힘 (0..1) */
+  get chargeLevel() { return this.charge ? this.powerOf(this.charge) : 0; }
 
   /* ───────────── 튜토리얼용 배치 ───────────── */
 
@@ -282,7 +317,7 @@ export class MatchEngine {
     if (o && o.stun > 0 && !o.gk) this.loose(o);
 
     this.computeRoles();
-    if (!this.autopilot) this.humanControl();
+    if (!this.autopilot) this.humanControl(dt);
     for (const p of this.players) if ((this.autopilot || p !== this.human) && !p.hidden) this.ai(p, dt);
     this.aiItems(dt);
     this.integrate(dt);
@@ -297,7 +332,7 @@ export class MatchEngine {
     this.clearPress();
   }
 
-  clearPress() { this.pressed.fill(false); }
+  clearPress() { this.pressed.fill(false); this.kickPower = null; }
 
   follow(dt) {
     const b = this.ball;
@@ -330,8 +365,10 @@ export class MatchEngine {
 
   /* ───────────── 사용자 조작 ───────────── */
 
-  humanControl() {
+  humanControl(dt) {
     const h = this.human;
+    // 힘 모으는 중에 공을 뺏기면 취소
+    if (this.charge) { if (this.ball.owner !== h) this.charge = null; else this.charge.t += dt; }
     const mag = hypot(this.joyX, this.joyY);
     if (h.stun > 0) { h.wantX = 0; h.wantY = 0; }
     else if (mag > 0.22) {
@@ -405,12 +442,13 @@ export class MatchEngine {
     const d0 = hypot(gx - p.x, ty - p.y);
     const skill = t === 0 && !this.autopilot ? AI.humanShotSkill : this.ratings[t];
     // 레전드는 훨씬 정확하고 세게 찬다
-    const err = (0.5 + d0 / 17) * ((t === 1 ? AI.shotError : 1.7) - skill * 0.22) * clamp(1 - 0.35 * p.power, 0.1, 1.3);
+    const pw = p === this.human ? this.kickPower : null; // 내가 모은 힘
+    const err = (0.5 + d0 / 17) * ((t === 1 ? AI.shotError : 1.7) - skill * 0.22) * clamp(1 - 0.35 * p.power, 0.1, 1.3) * KickPower.errorMul(pw);
     const fire = this.armedFire[t];
     const curve = this.armedCurve[t];
     // 전설의 신(★5)은 가끔 아무도 못 막는 황금 슛
     const golden = !fire && !curve && p.power >= 2 && r.float() < 0.35;
-    let speed = 29 + r.float() * 4 + 3 * p.power;
+    let speed = (29 + r.float() * 4 + 3 * p.power) * KickPower.speedMul(pw);
     if (fire) speed = 44 + this.level(t, ItemType.FIRE) * 2;
     if (golden) speed = 47;
     if (curve) ty = FW / 2 + (a >= 0 ? 1 : -1) * (GOAL_HALF - 0.9);
@@ -455,24 +493,27 @@ export class MatchEngine {
     const mates = this.players.filter((m) => m.team === p.team && m !== p && !m.gk && m.stun <= 0 && !m.hidden);
     if (mates.length === 0) return;
     const fwd = p.team === 0 ? 1 : -1;
+    const pw = p === this.human ? this.kickPower : null;
+    // 살살 차면 가까운 동료, 세게 차면 먼 동료 쪽으로
+    const reach = pw == null ? 0 : (pw - 0.5) / 20;
     const best = maxBy(mates, (m) => {
       const dx = m.x - p.x, dy = m.y - p.y;
       const d = Math.max(hypot(dx, dy), 0.1);
       const open = this.nearestOpp(m)[1];
-      if (hx != null && hy != null) return ((dx * hx + dy * hy) / d) * 3 - d / 40 + open / 14;
-      return dx * fwd / 12 + open / 5 - d / 30 + this.rnd.float();
+      if (hx != null && hy != null) return ((dx * hx + dy * hy) / d) * 3 - d / 40 + open / 14 + d * reach;
+      return dx * fwd / 12 + open / 5 - d / 30 + this.rnd.float() + d * reach;
     });
-    this.passTo(p, best);
+    this.passTo(p, best, pw);
   }
 
-  passTo(p, m) {
+  passTo(p, m, pw = null) {
     const b = this.ball;
     const tx = clamp(m.x + m.vx * 0.35, 1, FL - 1);
     const ty = clamp(m.y + m.vy * 0.35, 1, FW - 1);
     const d = Math.max(hypot(tx - p.x, ty - p.y), 0.5);
     const blocked = this.players.some((o) => o.team !== p.team && !o.gk && segDist(o.x, o.y, p.x, p.y, tx, ty) < 1.4);
     const lofted = d > 24 || (blocked && d > 7);
-    let speed = clamp(11 + d * 0.75, 13, 25);
+    let speed = clamp(11 + d * 0.75, 13, 25) * KickPower.speedMul(pw);
     this.release(p);
     this.stat('pass');
     if (lofted) {
