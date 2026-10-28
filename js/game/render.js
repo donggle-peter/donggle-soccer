@@ -200,19 +200,21 @@ function drawWorld(ctx, e, vw, vh) {
     else label(ctx, p.m.name, P.x(p.x, p.y), P.y(p.y) - 100 * ps * 0.95, 14, WHITE, 4);
   }
 
-  // 내 선수 표시 (노란 화살표 + 이름)
+  // 내 선수 표시 (노란 화살표. 이름은 다른 선수와 같은 크기)
   if (!e.autopilot && e.phase !== Phase.END) {
     const h = e.human;
     const s = P.s(h.y) * h.size;
     const x = P.x(h.x, h.y);
-    const y = P.y(h.y) - 104 * s * 0.95 + Math.sin(e.time * 6) * 3;
-    // 공을 몰고 갈 때(내가 조종할 때)도 레전드는 이름 왼쪽에 ⭐
-    if (h.m.name) label(ctx, h.m.glow ? '⭐' + h.m.name : h.m.name, x, y - 24, 16, YELLOW, 4.5);
+    const top = P.y(h.y) - 104 * s * 0.95;
+    const y = top + Math.sin(e.time * 6) * 3;
+    // 이름은 가만히, 화살표만 통통 (둘 사이를 띄운다)
+    if (h.m.name) {
+      if (h.m.glow) label(ctx, '⭐' + h.m.name, x, top - 36, 15, YELLOW, 4);
+      else label(ctx, h.m.name, x, top - 36, 14, WHITE, 4);
+    }
     ctx.beginPath(); ctx.moveTo(x - 11, y - 12); ctx.lineTo(x + 11, y - 12); ctx.lineTo(x, y + 2); ctx.closePath();
     ctx.fillStyle = css(YELLOW); ctx.fill();
     ctx.strokeStyle = css(INK); ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.stroke();
-    if (e.armedFire[0]) label(ctx, '🔥', x + 20, y - 8, 20);
-    else if (e.armedCurve[0]) label(ctx, '🌀', x + 20, y - 8, 20);
   }
 }
 
@@ -238,11 +240,9 @@ function drawPlayer(ctx, e, P, p) {
   const sc = 0.95 * s * p.size;
   const isMe = p === e.human && !e.autopilot && e.phase !== Phase.END;
   if (p.m.glow) {
-    // 레전드: 발밑 금빛 고리 + 반짝이
+    // 레전드: 발밑 금빛 고리
     oval(ctx, sx, sy, 40 * sc, 12 * sc); ctx.fillStyle = css(YELLOW, 0.4); ctx.fill();
     ctx.strokeStyle = css(YELLOW); ctx.lineWidth = 3; ctx.stroke();
-    const tw = (Math.sin(e.time * 4 + p.slot) + 1) / 2;
-    sparkle(ctx, sx + 30 * sc, sy - 60 * sc - tw * 10, 0.4 + tw * 0.3, 0xfffff6a0, 0.5 + tw * 0.5);
   }
   if (isMe) { oval(ctx, sx, sy + 0.5 * sc, 30 * sc, 8.5 * sc); ctx.strokeStyle = css(YELLOW); ctx.lineWidth = 4; ctx.stroke(); }
   if (p.speedT > 0) {
