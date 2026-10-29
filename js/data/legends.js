@@ -75,10 +75,45 @@ class Legend {
 const all = PLAYERS_TSV.split('\n').map((l) => new Legend(l.split('\t')));
 const byGrade = new Map(Grades.map((g) => [g, all.filter((l) => l.grade === g)]));
 
+/**
+ * 프로그램: 같은 선수의 특별 카드(테두리·무늬가 다름). 기본 선수와 따로 가질 수 있다.
+ * 프로그램 선수는 진화가 없고 오버롤이 고정. 이벤트로 받고, 이벤트가 끝나면 이적시장에서 판다.
+ */
+export const Programs = [
+  {
+    id: 'LP', name: '마지막 힘', ovr: 175, price: 100000,
+    /** 이 시각(이벤트가 끝날 때)부터 이적시장에서 판다 */
+    saleFrom: Date.parse('2026-11-05T21:16:00+09:00'),
+    /** 선수 번호 = idBase + 기본 선수 번호 (저장할 때 이 번호로) */
+    idBase: 100000,
+    eventId: 'last-power-2026-11',
+    // 손흥미 · 에우제비유 · 마르코 판 바스텬 · 박지송 · 카퓨 · 버질 반다이쿠 · 필 포둔 · 훌리안 알바레수
+    baseIds: [7, 10, 12, 52, 80, 109, 104, 183],
+  },
+];
+
+class ProgramLegend extends Legend {
+  constructor(base, program) {
+    super([program.idBase + base.id, base.name, base.short, base.flag, base.country, base.pos.name, base.num, base.grade.name, program.ovr]);
+    this.base = base;
+    this.program = program;
+  }
+  ovrAt() { return this.ovr; }
+  get price() { return this.program.price; }
+  priceAt() { return this.program.price; }
+  skill() { return `⚡ ${this.program.name} · 오버롤 ${this.ovr} · 진화 없음`; }
+}
+
+const programPlayers = Programs.flatMap((p) => (p.players = p.baseIds.map((id) => new ProgramLegend(all[id], p))));
+const programById = new Map(programPlayers.map((l) => [l.id, l]));
+export const programOf = (id) => Programs.find((p) => p.id === id) ?? null;
+
 export const Legends = {
   all,
   TOTAL: all.length,
-  get: (id) => all[id],
+  get: (id) => all[id] ?? programById.get(id),
+  /** 프로그램 선수 전부 */
+  programs: programPlayers,
   byGrade,
   round10: (x) => Math.max(Math.round(x / 10) * 10, 10),
   /** 오버롤 → 가격. 오버롤이 1 높아질 때마다 8.5% 비싸짐 (50 → 100코인, 100 → 약 5,900코인) */

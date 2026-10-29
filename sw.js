@@ -1,5 +1,5 @@
 /* 한 번 열면 인터넷 없이도 열리게 파일을 저장해 둔다. 새 버전을 올리면 VERSION 을 바꾼다 */
-const VERSION = 'donggle-1.0.16'; // js/version.js 와 같게
+const VERSION = 'donggle-1.0.17'; // js/version.js 와 같게
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
   'assets/jua.ttf', 'assets/bgm.m4a', 'assets/babam.wav', 'assets/icon-192.png', 'assets/icon-512.png', 'assets/icon-maskable-512.png', 'assets/apple-touch-icon.png',
@@ -7,7 +7,7 @@ const FILES = [
   'js/data/raw.js', 'js/data/items.js', 'js/data/teams.js', 'js/data/legends.js', 'js/data/tournament.js', 'js/data/store.js', 'js/data/events.js',
   'js/game/engine.js', 'js/game/draw.js', 'js/game/render.js', 'js/game/tutorial.js',
   'js/ui/kit.js', 'js/ui/menu.js', 'js/ui/play.js', 'js/ui/tutorialScreens.js', 'js/ui/match.js', 'js/ui/worldcup.js',
-  'js/ui/league.js', 'js/ui/shop.js', 'js/ui/transfer.js', 'js/ui/myteam.js', 'js/ui/events.js',
+  'js/ui/league.js', 'js/ui/shop.js', 'js/ui/transfer.js', 'js/ui/myteam.js', 'js/ui/events.js', 'js/ui/programArt.js',
 ];
 
 self.addEventListener('install', (e) => {

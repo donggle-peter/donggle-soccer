@@ -1,3 +1,4 @@
+import { activeEvents } from './events.js';
 import { Hat, hatByName, Roster, SquadMember } from './teams.js';
 import { ItemTypes, Items, itemByName } from './items.js';
 import { Legends, Evolution, Grade, Formation, powerOf, SELL_COOLDOWN_MS } from './legends.js';
@@ -83,6 +84,9 @@ export class Store {
     this.usedCoupons = new Set(s.coupons ?? []);
     /** 보상을 받은 이벤트 */
     this.claimedEvents = new Set(s.events ?? []);
+    /** 이벤트가 열린 뒤 한 경기 수 · 프로그램 선수를 몇 명 골라 받았나 (이벤트별) */
+    this.eventCounts = s.evCount ?? {};
+    this.eventPicks = s.evPick ?? {};
     if (migrated) this.save();
   }
 
@@ -101,7 +105,7 @@ export class Store {
       legends: [...this.ownedLegends], lineup: Object.fromEntries(this.lineup), evo: Object.fromEntries(this.evolutions),
       formation: this.formation.name, captain: this.captain, music: this.music,
       nickname: this.nickname, lastSellAt: this.lastSellAt, coupons: [...this.usedCoupons],
-      events: [...this.claimedEvents],
+      events: [...this.claimedEvents], evCount: this.eventCounts, evPick: this.eventPicks,
     };
     try { this.storage?.setItem(KEY, JSON.stringify(s)); } catch { /* 저장 공간이 없으면 이번 판만 */ }
     this.listeners.forEach((fn) => fn());
@@ -167,12 +171,13 @@ export class Store {
 
   /* ───── 이적시장 ───── */
 
-  evoOf(l) { return this.evolutions.get(l.id) ?? 0; }
+  evoOf(l) { return l.program ? 0 : this.evolutions.get(l.id) ?? 0; }
   /**
    * 진화 도전 (1진 ~ 10진). 코인을 내고 도전해서 성공하면 한 단계 오르고, 실패하면 한 단계 내려간다.
    * 결과: { ok: 성공했나, from, to } — 코인이 모자라거나 더 못 오르면 null
    */
   evolve(l, roll = this.random.float()) {
+    if (l.program) return null;
     const e = this.evoOf(l);
     const cost = Evolution.cost(l, e);
     if (!this.ownedLegends.has(l.id) || e >= Evolution.MAX || this.coins < cost) return null;
@@ -186,7 +191,9 @@ export class Store {
   legendIn(slot) { const id = this.lineup.get(slot); return id == null ? null : Legends.get(id); }
   slotOf(id) { for (const [s, v] of this.lineup) if (v === id) return s; return null; }
   /** 선수 영입. evo 를 주면 그만큼 진화된 선수를 그 가치로 산다 */
-  buyLegend(l, evo = 0) {
+  buyLegend(l, evo = 0, now = Date.now()) {
+    // 프로그램 선수는 진화가 없고, 이벤트가 끝난 뒤에만 판다
+    if (l.program) { if (now < l.program.saleFrom) return false; evo = 0; }
     const cost = l.priceAt(evo);
     if (this.ownedLegends.has(l.id) || this.coins < cost) return false;
     this.coins -= cost;
@@ -226,8 +233,24 @@ export class Store {
 
   /** 이벤트 보상: 'claimed' 받음 · 'ready' 받을 수 있음 · 'progress' 아직 */
   eventState(ev) {
+    if (ev.kind === 'program') {
+      if (ev.program.players.every((l) => this.ownedLegends.has(l.id))) return 'claimed';
+      return this.programPicksLeft(ev) > 0 ? 'ready' : 'progress';
+    }
     if (this.claimedEvents.has(ev.id)) return 'claimed';
     return this.matches >= ev.needMatches ? 'ready' : 'progress';
+  }
+  /** 프로그램 이벤트: 이벤트가 열린 뒤 한 경기 수 */
+  eventCount(ev) { return this.eventCounts[ev.id] ?? 0; }
+  /** 프로그램 이벤트: 지금 골라 받을 수 있는 선수 수 (needMatches 경기마다 1명) */
+  programPicksLeft(ev) { return Math.floor(this.eventCount(ev) / ev.needMatches) - (this.eventPicks[ev.id] ?? 0); }
+  /** 프로그램 이벤트: 선수 1명 골라 받기 */
+  claimProgram(ev, l, now = Date.now()) {
+    if (now >= ev.end || this.programPicksLeft(ev) <= 0 || l.program !== ev.program || this.ownedLegends.has(l.id)) return false;
+    this.ownedLegends.add(l.id);
+    this.eventPicks[ev.id] = (this.eventPicks[ev.id] ?? 0) + 1;
+    this.save();
+    return true;
   }
   /** 이벤트 보상 받기 (이미 가진 선수면 그 진화 단계로 올려 준다) */
   claimEvent(ev, now = Date.now()) {
@@ -319,8 +342,10 @@ export class Store {
   addCoins(n) { this.coins += n; this.save(); }
 
   /** result: 1 승, 0 무, -1 패 (승부차기 포함) */
-  recordMatch(result, gf, ga) {
+  recordMatch(result, gf, ga, now = Date.now()) {
     this.matches++;
+    // 진행 중인 프로그램 이벤트는 이벤트가 열린 뒤 경기만 센다
+    for (const ev of activeEvents(now)) if (ev.kind === 'program') this.eventCounts[ev.id] = this.eventCount(ev) + 1;
     if (result === 1) { this.wins++; this.streak++; } else if (result === 0) { this.draws++; this.streak = 0; } else this.streak = 0;
     this.bestStreak = Math.max(this.bestStreak, this.streak);
     this.goalsFor += gf;

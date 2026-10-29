@@ -1,4 +1,4 @@
-import { Legends } from './legends.js';
+import { Legends, Programs } from './legends.js';
 
 /* ───────── 이벤트 센터 ─────────
  * 끝나는 시각이 지나면 목록에서 사라지고, 다 끝나면 "이벤트 없음".
@@ -7,6 +7,7 @@ import { Legends } from './legends.js';
 export const EVENTS = [
   {
     id: 'first-player-2026-11',
+    kind: 'legend',
     title: '첫 플레이어 이벤트',
     /** 경기를 이만큼 하면 받을 수 있다 (어떤 경기든) */
     needMatches: 1,
@@ -14,8 +15,17 @@ export const EVENTS = [
     evo: 10,
     end: Date.parse('2026-11-04T18:51:00+09:00'),
   },
+  {
+    id: Programs[0].eventId,
+    kind: 'program',
+    title: Programs[0].name,
+    /** 이벤트가 열린 뒤에 한 경기만 센다. 이만큼 할 때마다 프로그램 선수 1명을 골라 받는다 */
+    needMatches: 80,
+    program: Programs[0],
+    end: Programs[0].saleFrom,
+  },
 ];
-EVENTS.forEach((e) => (e.legend = Legends.get(e.legendId)));
+EVENTS.forEach((e) => { if (e.legendId != null) e.legend = Legends.get(e.legendId); });
 
 export const activeEvents = (now = Date.now()) => EVENTS.filter((e) => now < e.end);
 

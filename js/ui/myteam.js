@@ -144,7 +144,7 @@ function Candidates(app, st, msg) {
       const other = store.slotOf(l.id);
       return CandidateRow({
         hat: l.grade.hat, golden: l.grade === Grade.GOD, glow: l.grade.glow, gk: l.pos === Pos.GK, ovr, gradeColor: l.grade.color, name: l.short,
-        sub: l.pos.name + (other != null && other !== slot ? ` · ${nameIn(store, other)} 자리에서 이동` : ''), playing: other === slot, delta: ovr - cur,
+        sub: l.pos.name + (l.program ? ` · ⚡ ${l.program.name}` : '') + (other != null && other !== slot ? ` · ${nameIn(store, other)} 자리에서 이동` : ''), playing: other === slot, delta: ovr - cur,
       }, () => { store.assignLegend(l, slot); msg(`⭐ ${l.short} 출전!`); });
     }),
   ];
