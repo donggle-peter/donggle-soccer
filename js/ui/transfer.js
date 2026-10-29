@@ -40,17 +40,19 @@ export function TransferScreen(app, st, params = {}) {
   }
   // 보유 선수는 실제 진화 단계, 아니면 필터에서 고른 단계로 보여 준다
   const evo = (l) => (store.ownedLegends.has(l.id) ? store.evoOf(l) : st.evoF);
+  // 정렬은 보유 목록에서만 내 진화 단계로. 전체·등급 목록은 내가 산(진화한) 선수도 원래 자리에
+  const sortEvo = (l) => (st.ownedOnly ? evo(l) : st.evoF);
   const key = {
-    ovrHigh: (l) => -l.ovrAt(evo(l)),
-    ovrLow: (l) => l.ovrAt(evo(l)),
-    value: (l) => -powerOf(l.ovrAt(evo(l))) / l.priceAt(evo(l)),
-    priceLow: (l) => l.priceAt(evo(l)),
-    priceHigh: (l) => -l.priceAt(evo(l)),
+    ovrHigh: (l) => -l.ovrAt(sortEvo(l)),
+    ovrLow: (l) => l.ovrAt(sortEvo(l)),
+    value: (l) => -powerOf(l.ovrAt(sortEvo(l))) / l.priceAt(sortEvo(l)),
+    priceLow: (l) => l.priceAt(sortEvo(l)),
+    priceHigh: (l) => -l.priceAt(sortEvo(l)),
   }[st.sort];
   const list = Legends.all
     .filter((l) => (st.grade == null || l.grade === st.grade) && (!st.ownedOnly || store.ownedLegends.has(l.id)) && (st.pos == null || l.pos === st.pos))
     .map((l) => [key(l), l])
-    .sort((a, b) => a[0] - b[0] || b[1].ovrAt(evo(b[1])) - a[1].ovrAt(evo(a[1])) || a[1].id - b[1].id)
+    .sort((a, b) => a[0] - b[0] || b[1].ovrAt(sortEvo(b[1])) - a[1].ovrAt(sortEvo(a[1])) || a[1].id - b[1].id)
     .map((x) => x[1]);
   const defaultsFirst = st.sort === 'ovrLow' || st.sort === 'priceLow';
   // 보유 목록에는 기본 동글이들도 (sel 이 음수면 기본 선수: -(자리 + 1))

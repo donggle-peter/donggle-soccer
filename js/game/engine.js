@@ -27,14 +27,15 @@ export const KickPower = {
 
 /** 난이도: 상대(컴퓨터) 팀이 얼마나 잘하나. 숫자를 바꾸면 경기 전체 난이도가 바뀐다 */
 export const AI = {
-  // 맨 처음(쉬운) 난이도
-  speedBase: 8.3, speedPerRating: 0.3,        // 달리기 (내 팀은 10.2 + 0.2 × 실력)
-  tackleRate: 0.55, tackleRatePerRating: 0.15, // 공 가진 상대에게 얼마나 자주 태클
-  tackleWin: 0.22, tackleWinPerRating: 0.04,  // 태클 성공 확률
-  gkSave: 0.4, gkSavePerRating: 0.05,         // 상대 골키퍼 선방
-  shotError: 2.1,                             // 상대 슛 빗나감 (작을수록 정확)
-  humanTackleWin: 0.78,                       // 내 태클 성공 확률
+  // 보통 난이도 (맨 처음 쉬운 값: 8.3 / 0.55 / 0.22 / 0.4 / 2.1 / 0.78)
+  speedBase: 8.7, speedPerRating: 0.3,        // 달리기 (내 팀은 10.2 + 0.2 × 실력)
+  tackleRate: 0.68, tackleRatePerRating: 0.15, // 공 가진 상대에게 얼마나 자주 태클
+  tackleWin: 0.27, tackleWinPerRating: 0.04,  // 태클 성공 확률
+  gkSave: 0.46, gkSavePerRating: 0.05,        // 상대 골키퍼 선방
+  shotError: 1.95,                            // 상대 슛 빗나감 (작을수록 정확)
+  humanTackleWin: 0.72,                       // 내 태클 성공 확률
   humanShotSkill: 3.6,                        // 내 슛 정확도 (클수록 정확)
+  gkGrab: 0.72, gkGrabPerRating: 0.03,        // 공 몰고 골대로 달려들면 상대 골키퍼가 낚아챌 확률
 };
 export const Phase = { READY: 0, PLAY: 1, GOAL: 2, END: 3 };
 export const Stun = { NONE: 0, SLIP: 1, ICE: 2, KNOCK: 3, WHIFF: 4, DIVE: 5 };
@@ -167,6 +168,13 @@ export class MatchEngine {
     /** 밸런스 확인용 통계 */
     this.stats = {};
 
+    /**
+     * 황금 슛: 전설의 신 선수만, 한 경기에 한 번. 경기 중 아무 때나 갑자기 열리고(goldenAt),
+     * 열리면 그 선수에게 날개가 돋는다(goldenReady). 그 선수가 다음에 차는 슛이 황금 슛.
+     */
+    this.goldenAt = 0.12 + this.rnd.float() * 0.6; // 경기 시간 중 몇 %쯤에 열릴지
+    this.goldenReady = null;
+    this.goldenUsed = false;
     this.kickoff(0);
     const legends = this.players.filter((p) => p.team === 0 && p.m.glow).length;
     if (legends > 0) this.toast(`⭐ 레전드 ${legends}명 출전!`);
@@ -293,6 +301,7 @@ export class MatchEngine {
     }
 
     if (!this.tutorial) this.clock += dt;
+    if (!this.tutorial && !this.goldenUsed && !this.goldenReady && this.clock >= this.goldenAt * this.setup.duration) this.openGolden();
     if (!this.tutorial && this.clock >= this.endTime) {
       if (this.setup.knockout && this.score[0] === this.score[1] && !this.extra) {
         this.extra = true;
@@ -330,6 +339,14 @@ export class MatchEngine {
     this.autoSwitch();
     this.follow(dt);
     this.clearPress();
+  }
+
+  /** 황금 슛 열기: 내 팀 전설의 신(골키퍼 빼고) 중 한 명에게 날개 */
+  openGolden() {
+    const gods = this.players.filter((p) => p.team === 0 && p.m.golden && !p.gk && !p.hidden);
+    if (gods.length === 0) { this.goldenUsed = true; return; }
+    this.goldenReady = gods[this.rnd.int(gods.length)];
+    this.showBanner(`✨ ${this.goldenReady.m.name} 황금 슛 가능!`, 1.8, 0);
   }
 
   clearPress() { this.pressed.fill(false); this.kickPower = null; }
@@ -447,7 +464,8 @@ export class MatchEngine {
     const fire = this.armedFire[t];
     const curve = this.armedCurve[t];
     // 전설의 신(★5)은 가끔 아무도 못 막는 황금 슛
-    const golden = !fire && !curve && p.power >= 2 && r.float() < 0.35;
+    const golden = !fire && !curve && p === this.goldenReady;
+    if (golden) { this.goldenReady = null; this.goldenUsed = true; }
     let speed = (29 + r.float() * 4 + 3 * p.power) * KickPower.speedMul(pw);
     if (fire) speed = 44 + this.level(t, ItemType.FIRE) * 2;
     if (golden) speed = 47;
@@ -694,12 +712,18 @@ export class MatchEngine {
     const t = p.team, b = this.ball, r = this.rnd;
     const lineX = t === 0 ? 0 : FL;
     const inX = t === 0 ? 1 : -1;
+    p.grabCd = Math.max(0, (p.grabCd ?? 0) - dt);
     if (b.owner === p) {
       p.holdT += dt;
       this.moveTo(p, lineX + inX * 2.5, FW / 2, 0.5);
       if (p.holdT > 0.9) {
         const target = maxBy(this.players.filter((m) => m.team === t && !m.gk && !m.hidden), (m) => this.nearestOpp(m)[1] + r.float() * 4);
-        if (target) this.passTo(p, target);
+        const pressed = this.nearestOpp(p)[1] < 5;
+        if (target) {
+          this.passTo(p, target);
+          // 상대가 바로 앞에 붙어 있으면 머리 위로 높이 던진다 (가로채서 그냥 밀어 넣지 못하게)
+          if (pressed) b.vz = Math.max(b.vz, 9);
+        }
         else {
           // 받을 친구가 없으면 앞으로 길게 차기
           this.release(p);
@@ -707,6 +731,13 @@ export class MatchEngine {
           b.shotTeam = -1;
         }
       }
+      return;
+    }
+    // 공을 몰고 골대로 달려드는 상대: 나가서 몸으로 막는다
+    const o = b.owner;
+    if (o && o.team !== t && !o.gk && hypot(o.x - lineX, o.y - FW / 2) < 9) {
+      this.moveTo(p, o.x, o.y, 1.25);
+      if (p.grabCd <= 0 && p.stun <= 0 && this.dist(p, o.x, o.y) < 2.2 * p.size) this.gkGrab(p, o);
       return;
     }
     let tx = lineX + inX * 1.6;
@@ -979,6 +1010,21 @@ export class MatchEngine {
         if (b.x > FL) b.z = Math.min(b.z, GOAL_H - 0.3);
       } else if (!b.owner) { b.x = FL - 0.4; b.vx = -Math.abs(b.vx) * 0.6; b.shotTeam = -1; }
     }
+  }
+
+  /** 골키퍼가 달려드는 상대에게서 공 뺏기 (한 번 놓치면 잠깐 넘어진다) */
+  gkGrab(g, o) {
+    g.grabCd = 0.75;
+    const base = g.team === 1 && !this.autopilot ? AI.gkGrab + this.ratings[1] * AI.gkGrabPerRating : 0.6 + this.ratings[g.team] * 0.05;
+    const pr = clamp(base + 0.1 * g.power - 0.12 * o.power, 0.2, 0.95);
+    if (this.rnd.float() < pr) {
+      this.take(g);
+      this.stat('grab');
+      g.kickAnim = 0.3;
+      // 발밑으로 몸을 던져 막아서 달려든 선수는 잠깐 넘어진다
+      o.stun = 0.5; o.stunKind = Stun.KNOCK;
+      this.toast(g.team === 1 ? '🧤 상대 골키퍼가 공을 낚아챘어요!' : '🧤 우리 골키퍼가 막았어요!');
+    } else { g.stun = 0.45; g.stunKind = Stun.DIVE; }
   }
 
   gkSaves() {

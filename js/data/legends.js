@@ -65,7 +65,7 @@ class Legend {
   sellPrice(evo) { return Legends.round10(this.priceAt(evo) * SELL_RATE); }
   skill(evo) {
     if (this.ovrAt(evo) >= 100 && this.pos === Pos.GK) return '🧤 신의 손 · 불꽃 슛도 막아요';
-    if (this.ovrAt(evo) >= 100) return '✨ 황금 슛 · 가끔 아무도 못 막는 황금 슛!';
+    if (this.grade === Grade.GOD) return '✨ 황금 슛 · 경기마다 한 번, 날개가 돋으면 못 막는 슛!';
     if (this.pos === Pos.GK) return '🧤 선방 · 오버롤이 높을수록 잘 막아요';
     if (this.pos === Pos.DF) return '🛡️ 태클 · 오버롤이 높을수록 잘 뺏어요';
     return '⚡ 몸놀림 · 오버롤이 높을수록 빠르고 정확해요';

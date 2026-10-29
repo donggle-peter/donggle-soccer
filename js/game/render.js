@@ -271,6 +271,8 @@ function drawPlayer(ctx, e, P, p) {
   if (p.stunKind === Stun.SLIP) tilt = 75 * (p.faceRight ? 1 : -1);
   else if (p.stunKind === Stun.DIVE) tilt = 55 * (p.y < FW / 2 ? -1 : 1);
   else if (p.stunKind === Stun.KNOCK) tilt = 25 * (p.faceRight ? -1 : 1);
+  // 황금 슛이 열린 전설의 신: 등에 날개
+  if (p === e.goldenReady) drawWings(ctx, sx, sy - hop * sc, sc, e.time);
   ctx.save();
   ctx.translate(sx, sy); ctx.rotate((tilt * Math.PI) / 180); ctx.translate(-sx, -sy);
   drawMongi(ctx, sx, sy, sc, e.setup.kit(p.team), {
@@ -288,6 +290,25 @@ function drawPlayer(ctx, e, P, p) {
       const a = e.time * 5 + i * 2.09;
       sparkle(ctx, sx + Math.cos(a) * 22 * sc, sy - 78 * sc + Math.sin(a) * 6 * sc, 0.5, YELLOW);
     }
+  }
+}
+
+/** 몸 양옆에 파닥이는 금빛 날개 (몸 뒤에 그린다) */
+function drawWings(ctx, x, y, sc, t) {
+  const flap = Math.sin(t * 9) * 0.22;
+  for (const d of [-1, 1]) {
+    ctx.save();
+    ctx.translate(x + d * 24 * sc, y - 42 * sc);
+    ctx.scale(d * sc, sc);
+    ctx.rotate(-0.35 - flap);
+    // 깃털 세 장 (위가 제일 길다)
+    for (let i = 2; i >= 0; i--) {
+      const len = 34 - i * 7, yy = i * 9;
+      ctx.beginPath(); ctx.ellipse(len / 2 + 4, yy, len / 2 + 4, 7.5, 0.18 * i, 0, Math.PI * 2);
+      ctx.fillStyle = css(i === 0 ? 0xfffff6d0 : 0xffffe27a); ctx.fill();
+      ctx.strokeStyle = css(INK); ctx.lineWidth = 2.8; ctx.stroke();
+    }
+    ctx.restore();
   }
 }
 
@@ -364,6 +385,18 @@ function drawHud(ctx, e, vw, touch) {
     ctx.strokeStyle = css(INK); ctx.lineWidth = 3; ctx.stroke();
     label(ctx, info, vw / 2, 83, 15, INK);
   }
+  // 황금 슛이 열렸을 때
+  if (e.goldenReady) {
+    const text = `✨ ${e.goldenReady.m.name} 황금 슛 가능!`;
+    const k = 1 + Math.sin(e.time * 6) * 0.04;
+    const gw = (textWidth(ctx, text, 19) + 40) * k, gh = 36 * k, gy = 104;
+    rrect(ctx, vw / 2 - gw / 2, gy + 4, gw, gh, gh / 2); ctx.fillStyle = css(INK); ctx.fill();
+    const g = ctx.createLinearGradient(0, gy, 0, gy + gh);
+    g.addColorStop(0, css(0xfffff3a0)); g.addColorStop(1, css(0xffffb627));
+    rrect(ctx, vw / 2 - gw / 2, gy, gw, gh, gh / 2); ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = css(INK); ctx.lineWidth = 3.5; ctx.stroke();
+    label(ctx, text, vw / 2, gy + gh / 2, 19 * k, INK);
+  }
 
   // 일시정지
   const [px, py] = L.pause;
@@ -431,7 +464,7 @@ function drawHud(ctx, e, vw, touch) {
   circle(ctx, cx, cy + (touch.down[Btn.ITEM] ? 4 : 0), L.itemR); ctx.fillStyle = held ? '#fff' : css(0xffdcd6ec); ctx.fill();
   circle(ctx, cx, cy, L.itemR); ctx.strokeStyle = css(held ? 0xffffb627 : INK); ctx.lineWidth = 5; ctx.stroke();
   circle(ctx, cx, cy, L.itemR + 4); ctx.strokeStyle = css(INK); ctx.lineWidth = 3; ctx.stroke();
-  if (e.charge) drawKickGauge(ctx, e, L, vw);
+  if (e.charge) drawKickGauge(ctx, e, L);
   if (held) label(ctx, held.emoji, cx, cy, 38);
   else if (e.armedFire[0]) label(ctx, '🔥', cx, cy, 30, WHITE, 0, INK, 'center', 0.6);
   else if (e.armedCurve[0]) label(ctx, '🌀', cx, cy, 30, WHITE, 0, INK, 'center', 0.6);
@@ -454,43 +487,21 @@ function drawHud(ctx, e, vw, touch) {
   }
 }
 
-const POWER_ZONES = [[0, KickPower.low, 0xff5fd068, '살살'], [KickPower.low, KickPower.high, 0xffffd23f, '보통'], [KickPower.high, 1, 0xffff4f64, '세게!']];
+const POWER_COLORS = [0xff5fd068, 0xffffd23f, 0xffff4f64];
 
-/** 슛·패스 힘 게이지: 화면 아래 가운데 막대 + 누르고 있는 버튼 둘레 링 */
-function drawKickGauge(ctx, e, L, vw) {
+/** 슛·패스 힘 게이지: 누르고 있는 버튼 둘레에 차오르는 링 (살살 초록 · 보통 노랑 · 세게 빨강) */
+function drawKickGauge(ctx, e, L) {
   const p = e.chargeLevel;
   const shot = e.charge.b === Btn.SHOOT;
-  const zone = POWER_ZONES[KickPower.zone(p)];
-  // 버튼 둘레 링
+  const color = POWER_COLORS[KickPower.zone(p)];
   const [bx, by] = shot ? L.shoot : L.pass;
   const rr = (shot ? L.shootR : L.passR) + 11;
-  const byy = by + 5;
-  ctx.beginPath(); ctx.arc(bx, byy, rr, 0, Math.PI * 2); ctx.strokeStyle = css(INK, 0.45); ctx.lineWidth = 9; ctx.stroke();
-  ctx.beginPath(); ctx.arc(bx, byy, rr, -Math.PI / 2, -Math.PI / 2 + p * Math.PI * 2);
-  ctx.strokeStyle = css(zone[2]); ctx.lineWidth = 9; ctx.lineCap = 'round'; ctx.stroke(); ctx.lineCap = 'butt';
-  // 막대
-  const w = 380, hh = 30, x = vw / 2 - w / 2, y = 520;
-  label(ctx, `${shot ? '⚽ 슛' : '👟 패스'} 힘 · ${zone[3]}`, vw / 2, y - 22, 20, WHITE, 5);
-  rrect(ctx, x - 6, y - 1, w + 12, hh + 12, 21); ctx.fillStyle = css(INK); ctx.fill();
-  rrect(ctx, x - 6, y - 6, w + 12, hh + 12, 21); ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = css(INK); ctx.lineWidth = 4; ctx.stroke();
-  ctx.save(); rrect(ctx, x, y, w, hh, 15); ctx.clip();
-  for (const [a, b, c] of POWER_ZONES) {
-    ctx.fillStyle = css(c, 0.28); ctx.fillRect(x + a * w, y, (b - a) * w, hh);
-    const end = Math.min(p, b);
-    if (end > a) { ctx.fillStyle = css(c); ctx.fillRect(x + a * w, y, (end - a) * w, hh); }
-  }
-  ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(x, y + 3, p * w, 7);
-  ctx.restore();
-  ctx.strokeStyle = css(INK, 0.5); ctx.lineWidth = 2.5;
-  for (const v of [KickPower.low, KickPower.high]) { ctx.beginPath(); ctx.moveTo(x + v * w, y + 4); ctx.lineTo(x + v * w, y + hh - 4); ctx.stroke(); }
-  // 바늘
-  const nx = x + p * w;
-  ctx.beginPath(); ctx.moveTo(nx - 9, y - 14); ctx.lineTo(nx + 9, y - 14); ctx.lineTo(nx, y - 2); ctx.closePath();
-  ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = css(INK); ctx.lineWidth = 3; ctx.stroke();
-  if (p >= 1) {
-    glow(ctx, x + w + 4, y + hh / 2, 46 + Math.sin(e.time * 12) * 4, 'rgba(255,120,120,0.85)');
-    label(ctx, 'MAX!', x + w + 36, y + hh / 2, 20, 0xffffd23f, 5);
-  }
+  const cy = by + 5;
+  ctx.beginPath(); ctx.arc(bx, cy, rr, 0, Math.PI * 2); ctx.strokeStyle = css(INK, 0.45); ctx.lineWidth = 9; ctx.stroke();
+  ctx.beginPath(); ctx.arc(bx, cy, rr, -Math.PI / 2, -Math.PI / 2 + p * Math.PI * 2);
+  // 가득 차면 링이 두근두근
+  ctx.strokeStyle = css(color); ctx.lineWidth = p >= 1 ? 10 + Math.abs(Math.sin(e.time * 10)) * 4 : 9;
+  ctx.lineCap = 'round'; ctx.stroke(); ctx.lineCap = 'butt';
 }
 
 function roundButton(ctx, [x, y], r, color, text, size, pressed, textColor = WHITE) {
