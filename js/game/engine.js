@@ -27,15 +27,15 @@ export const KickPower = {
 
 /** 난이도: 상대(컴퓨터) 팀이 얼마나 잘하나. 숫자를 바꾸면 경기 전체 난이도가 바뀐다 */
 export const AI = {
-  // 보통 난이도 (맨 처음 쉬운 값: 8.3 / 0.55 / 0.22 / 0.4 / 2.1 / 0.78)
-  speedBase: 8.7, speedPerRating: 0.3,        // 달리기 (내 팀은 10.2 + 0.2 × 실력)
-  tackleRate: 0.68, tackleRatePerRating: 0.15, // 공 가진 상대에게 얼마나 자주 태클
-  tackleWin: 0.27, tackleWinPerRating: 0.04,  // 태클 성공 확률
-  gkSave: 0.46, gkSavePerRating: 0.05,        // 상대 골키퍼 선방
-  shotError: 1.95,                            // 상대 슛 빗나감 (작을수록 정확)
-  humanTackleWin: 0.72,                       // 내 태클 성공 확률
-  humanShotSkill: 3.6,                        // 내 슛 정확도 (클수록 정확)
-  gkGrab: 0.72, gkGrabPerRating: 0.03,        // 공 몰고 골대로 달려들면 상대 골키퍼가 낚아챌 확률
+  // 어려움 (쉬운 값: 8.3 / 0.55 / 0.22 / 0.4 / 2.1 / 0.78 / 3.6 · 맨 처음 너무 어렵던 값: 9.8 / 1.4 / 0.35 / 0.58 / 1.75 / 0.55 / 2.8)
+  speedBase: 9.2, speedPerRating: 0.32,       // 달리기 (내 팀은 10.2 + 0.2 × 실력)
+  tackleRate: 0.95, tackleRatePerRating: 0.2, // 공 가진 상대에게 얼마나 자주 태클
+  tackleWin: 0.31, tackleWinPerRating: 0.05,  // 태클 성공 확률
+  gkSave: 0.52, gkSavePerRating: 0.05,        // 상대 골키퍼 선방
+  shotError: 1.85,                            // 상대 슛 빗나감 (작을수록 정확)
+  humanTackleWin: 0.64,                       // 내 태클 성공 확률
+  humanShotSkill: 3.2,                        // 내 슛 정확도 (클수록 정확)
+  gkGrab: 0.78, gkGrabPerRating: 0.03,        // 공 몰고 골대로 달려들면 상대 골키퍼가 낚아챌 확률
 };
 export const Phase = { READY: 0, PLAY: 1, GOAL: 2, END: 3 };
 export const Stun = { NONE: 0, SLIP: 1, ICE: 2, KNOCK: 3, WHIFF: 4, DIVE: 5 };
