@@ -83,7 +83,7 @@ export const Programs = [
   {
     id: 'LP', name: '마지막 힘', ovr: 175, price: 100000,
     /** 이 시각(이벤트가 끝날 때)부터 이적시장에서 판다 */
-    saleFrom: Date.parse('2026-11-05T21:16:00+09:00'),
+    saleFrom: Date.parse('2026-11-29T21:16:00+09:00'),
     /** 선수 번호 = idBase + 기본 선수 번호 (저장할 때 이 번호로) */
     idBase: 100000,
     eventId: 'last-power-2026-11',
