@@ -54,6 +54,8 @@ export class MatchSetup {
     this.startItem = o.startItem ?? null;
     /** 내 팀 포메이션 (상대는 늘 2-2) */
     this.formation = o.formation ?? Formation.F22;
+    /** 내 팀 킥오프(가운데에서 시작)는 주장이 한다. 주장이 골키퍼거나 없으면 3번 자리 */
+    this.kickSlot = o.captain != null && o.captain !== 0 ? o.captain : 3;
     this.kits = Teams.kits(home, away);
     this.squads = [o.roster ?? Teams.squad(home), Teams.squad(away)];
   }
@@ -246,12 +248,13 @@ export class MatchEngine {
   /* ───────────── 진행 ───────────── */
 
   kickoff(team) {
+    const kickSlot = (t) => (t === 0 ? this.setup.kickSlot ?? 3 : 3);
     for (const p of this.players) {
       const kicking = p.team === team;
       const form = this.setup.formationOf(p.team);
       let f;
       if (p.slot === 0) f = [0.025, 0.5];
-      else if (p.slot === 3 && kicking) f = [0.485, 0.5];
+      else if (p.slot === kickSlot(p.team) && kicking) f = [0.485, 0.5];
       else if (form === Formation.F22) {
         f = p.slot === 1 ? [0.2, 0.3] : p.slot === 2 ? [0.2, 0.7] : p.slot === 3 ? [0.37, 0.42] : kicking ? [0.44, 0.68] : [0.37, 0.64];
       } else {
@@ -268,9 +271,9 @@ export class MatchEngine {
     const b = this.ball;
     b.vx = 0; b.vy = 0; b.vz = 0; b.z = 0; b.fire = false; b.curve = false; b.curveT = 0;
     b.passTarget = null; b.shotTeam = -1; b.lastKicker = null;
-    const taker = this.players.find((p) => p.team === team && p.slot === 3);
+    const taker = this.players.find((p) => p.team === team && p.slot === kickSlot(team));
     b.owner = taker;
-    this.human = team === 0 ? taker : this.players.find((p) => p.team === 0 && p.slot === 3);
+    this.human = team === 0 ? taker : this.players.find((p) => p.team === 0 && p.slot === kickSlot(0));
     this.phase = Phase.READY;
     this.phaseT = 1.5;
     this.showBanner('준비~', 1.4);

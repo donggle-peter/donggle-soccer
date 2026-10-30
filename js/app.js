@@ -23,7 +23,7 @@ Sound.init(store);
 /** 경기 시작 준비: 내 라인업 · 아이템 레벨 · 시작 아이템 · 포메이션 */
 export function matchSetup(home, away, title, knockout) {
   return new MatchSetup(home, away, title, knockout, store.levelsMap(), {
-    roster: store.lineupMembers(), startItem: store.equipped, formation: store.formation,
+    roster: store.lineupMembers(), startItem: store.equipped, formation: store.formation, captain: store.captain,
   });
 }
 
