@@ -19,7 +19,7 @@ export const EVENTS = [
     id: Programs[0].eventId,
     kind: 'program',
     title: Programs[0].name,
-    /** 이벤트가 열린 뒤에 한 경기만 센다. 이만큼 할 때마다 프로그램 선수 1명을 골라 받는다 */
+    /** 이벤트가 열린 뒤에 한 경기만 센다. 이만큼 할 때마다 클래스 선수 1명을 골라 받는다 */
     needMatches: 80,
     program: Programs[0],
     end: Programs[0].saleFrom,

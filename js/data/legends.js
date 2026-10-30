@@ -76,8 +76,8 @@ const all = PLAYERS_TSV.split('\n').map((l) => new Legend(l.split('\t')));
 const byGrade = new Map(Grades.map((g) => [g, all.filter((l) => l.grade === g)]));
 
 /**
- * 프로그램: 같은 선수의 특별 카드(테두리·무늬가 다름). 기본 선수와 따로 가질 수 있다.
- * 프로그램 선수는 진화가 없고 오버롤이 고정. 이벤트로 받고, 이벤트가 끝나면 이적시장에서 판다.
+ * 클래스: 같은 선수의 특별 카드(테두리·무늬가 다름). 기본 선수와 따로 가질 수 있다.
+ * 클래스 선수는 진화가 없고 오버롤이 고정. 이벤트로 받고, 이벤트가 끝나면 이적시장에서 판다.
  */
 export const Programs = [
   {
@@ -112,7 +112,7 @@ export const Legends = {
   all,
   TOTAL: all.length,
   get: (id) => all[id] ?? programById.get(id),
-  /** 프로그램 선수 전부 */
+  /** 클래스 선수 전부 */
   programs: programPlayers,
   byGrade,
   round10: (x) => Math.max(Math.round(x / 10) * 10, 10),

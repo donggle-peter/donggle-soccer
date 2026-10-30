@@ -47,7 +47,7 @@ function EventTab(app, st, ev, on) {
   const state = store.eventState(ev);
   const program = ev.kind === 'program';
   const icon = program ? ProgramEmblem(ev.program, 46) : Txt('🎁', 28);
-  const sub = program ? `${ev.needMatches}경기 · 프로그램 선수` : `경기 ${ev.needMatches}번 · ${ev.legend.short} ${ev.evo}진`;
+  const sub = program ? `${ev.needMatches}경기 · 클래스 선수` : `경기 ${ev.needMatches}번 · ${ev.legend.short} ${ev.evo}진`;
   const badge = state === 'ready' ? '받기!' : state === 'progress' ? 'NEW' : null;
   return div({ style: { position: 'relative' } },
     CandyButton(() => { st.selId = ev.id; st.pick = null; app.render(); }, on ? GoldG : WhiteG, { w: 230, h: 92, radius: 22 },
@@ -57,7 +57,7 @@ function EventTab(app, st, ev, on) {
     badge ? div({ class: 'badge' }, badge) : null);
 }
 
-/** 프로그램 이벤트: 이벤트가 열린 뒤 needMatches 경기마다 프로그램 선수 1명 골라 받기 */
+/** 클래스 이벤트: 이벤트가 열린 뒤 needMatches 경기마다 클래스 선수 1명 골라 받기 */
 function ProgramEventCard(app, st, ev, now) {
   const store = app.store;
   const need = ev.needMatches;
@@ -84,7 +84,7 @@ function ProgramEventCard(app, st, ev, now) {
         Txt(`⏰ 남은 시간 ${remainText(ev.end - now)}`, 15, INK)),
       row({ gap: 12 }, ProgramEmblem(ev.program, 64),
         col({}, OTxt(ev.title, 32, ProgramYellow, { strokeWidth: 6 }),
-          Txt(`이벤트가 열린 뒤 ${need}경기를 할 때마다 프로그램 선수 1명을 골라 받아요!`, 15, 'rgba(255,255,255,0.85)'),
+          Txt(`이벤트가 열린 뒤 ${need}경기를 할 때마다 클래스 선수 1명을 골라 받아요!`, 15, 'rgba(255,255,255,0.85)'),
           Txt(`오버롤 ${ev.program.ovr} · 진화 없음 · ${endText(ev.end)}까지 · 끝나면 이적시장에서 판매`, 13, 'rgba(255,255,255,0.6)'))),
       div({ style: { display: 'grid', gridTemplateColumns: `repeat(${players.length}, 1fr)`, gap: 6, marginTop: 4 } },
         players.map((l) => {

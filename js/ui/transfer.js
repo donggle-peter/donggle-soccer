@@ -38,7 +38,7 @@ export function TransferScreen(app, st, params = {}) {
     /** 몇 진으로 살지 (0 = 진화 안 된 선수) */
     st.evoF = 0;
     st.sort = 'ovrHigh';
-    /** 프로그램 (null 이면 기본 선수) · 이름 검색 */
+    /** 클래스 (null 이면 기본 선수) · 이름 검색 */
     st.programF = null;
     st.name = '';
   }
@@ -53,8 +53,9 @@ export function TransferScreen(app, st, params = {}) {
     priceLow: (l) => l.priceAt(sortEvo(l)),
     priceHigh: (l) => -l.priceAt(sortEvo(l)),
   }[st.sort];
-  // 프로그램을 고르면 그 프로그램 선수, 보유 목록은 기본 + 프로그램 선수, 나머지는 기본 선수
-  const pool = st.programF ? programOf(st.programF).players : st.ownedOnly ? [...Legends.all, ...Legends.programs] : Legends.all;
+  // 클래스을 고르면 그 클래스 선수, 보유 목록은 기본 + 클래스 선수, 나머지는 기본 선수
+  // 클래스를 고르면 그 클래스 선수, 전체·보유는 기본 + 클래스 선수, 등급별은 기본 선수
+  const pool = st.programF ? programOf(st.programF).players : st.ownedOnly || st.grade == null ? [...Legends.all, ...Legends.programs] : Legends.all;
   const q = st.name.replace(/\s+/g, '');
   const list = pool
     .filter((l) => (st.grade == null || l.grade === st.grade) && (!st.ownedOnly || store.ownedLegends.has(l.id)) && (st.pos == null || l.pos === st.pos)
@@ -62,7 +63,7 @@ export function TransferScreen(app, st, params = {}) {
     .map((l) => [key(l), l])
     .sort((a, b) => a[0] - b[0] || b[1].ovrAt(sortEvo(b[1])) - a[1].ovrAt(sortEvo(a[1])) || a[1].id - b[1].id)
     .map((x) => x[1]);
-  // 프로그램 목록을 보는데 오른쪽이 다른 선수면 첫 프로그램 선수로
+  // 클래스 목록을 보는데 오른쪽이 다른 선수면 첫 클래스 선수로
   if (st.programF && !Legends.get(st.sel)?.program && list.length) st.sel = list[0].id;
   const defaultsFirst = st.sort === 'ovrLow' || st.sort === 'priceLow';
   // 보유 목록에는 기본 동글이들도 (sel 이 음수면 기본 선수: -(자리 + 1))
@@ -72,16 +73,16 @@ export function TransferScreen(app, st, params = {}) {
   const msg = (m) => showToast(root, m);
 
   const counts = new Map(Grades.map((g) => [g, Legends.byGrade.get(g).length]));
-  // 왼쪽 목록 (전체 아래에 ⚡ 프로그램. 버튼이 많아서 조금 낮게)
+  // 왼쪽 목록 (전체 아래에 ⚡ 클래스. 버튼이 많아서 조금 낮게)
   const BH = 27;
   const plain = !st.programF && !st.ownedOnly;
   const left = col({ width: 210, gap: 3 },
-    TextButton(`전체 ${comma(Legends.TOTAL)}`, () => setFilter(() => { st.grade = null; st.ownedOnly = false; st.programF = null; }), plain && st.grade == null ? GoldG : WhiteG, 210, BH, 15),
-    TextButton(`⚡ 프로그램 ${Legends.programs.length}`, () => setFilter(() => { st.grade = null; st.ownedOnly = false; st.programF = Programs[0].id; }), st.programF && !st.ownedOnly ? GoldG : [0xffffd9b0, 0xffff9a4a], 210, BH, 15),
+    TextButton(`전체 ${comma(Legends.TOTAL + Legends.programs.length)}`, () => setFilter(() => { st.grade = null; st.ownedOnly = false; st.programF = null; }), plain && st.grade == null ? GoldG : WhiteG, 210, BH, 15),
+    TextButton(`⚡ 클래스 ${Legends.programs.length}`, () => setFilter(() => { st.grade = null; st.ownedOnly = false; st.programF = Programs[0].id; }), st.programF && !st.ownedOnly ? GoldG : [0xffffd9b0, 0xffff9a4a], 210, BH, 15),
     [...Grades].reverse().map((g) => TextButton(`${g.label} ${comma(counts.get(g))}`, () => setFilter(() => { st.grade = g; st.ownedOnly = false; st.programF = null; }), plain && st.grade === g ? GoldG : WhiteG, 210, BH, 15)),
     TextButton(`✅ 보유 ${store.ownedLegends.size + store.roster.length}`, () => setFilter(() => { st.ownedOnly = true; st.grade = null; st.programF = null; }), st.ownedOnly ? GoldG : WhiteG, 210, BH, 15),
     space(5),
-    // 검색: 이름 · 프로그램 · 포지션 · 진 · 정렬 (누르면 검색 창)
+    // 검색: 이름 · 클래스 · 포지션 · 진 · 정렬 (누르면 검색 창)
     CandyButton(() => { st.draft = { name: st.name, programF: st.programF, pos: st.pos, evoF: st.evoF, sort: st.sort }; app.render(); },
       st.name || st.evoF > 0 || st.sort !== 'ovrHigh' ? GoldG : WhiteG, { w: '100%', h: 50, radius: 18 },
       col({ alignItems: 'center' }, Txt('🔍 검색', 17), Txt(searchSummary(st), 12, fade(0.75)))),
@@ -128,7 +129,7 @@ export function TransferScreen(app, st, params = {}) {
   root.append(
     NightBackground(),
     col({ position: 'absolute', inset: 0 },
-      TopBar(`🔄 이적시장 · 선수 ${comma(Legends.TOTAL)}명`, 0xffffb627, () => app.go('menu'), store.coins),
+      TopBar(`🔄 이적시장 · 선수 ${comma(Legends.TOTAL + Legends.programs.length)}명`, 0xffffb627, () => app.go('menu'), store.coins),
       row({ flex: 1, minHeight: 0, padding: 12, gap: 12, alignItems: 'stretch' }, left, center, detail)));
 
   if (st.draft) root.append(SearchPanel(app, st, setFilter));
@@ -268,7 +269,7 @@ function searchSummary(st) {
 
 const POS_CHOICES = [[null, '전체'], [Pos.FW, '⚔️ 공격수'], [Pos.MF, '🎯 미드필더'], [Pos.DF, '🛡️ 수비수'], [Pos.GK, '🧤 골키퍼']];
 
-/** 검색 창: 이름 · 프로그램 · 포지션 · 진 · 정렬. 고르기만 하면 그대로, 아래 [검색] 을 눌러야 한꺼번에 적용 */
+/** 검색 창: 이름 · 클래스 · 포지션 · 진 · 정렬. 고르기만 하면 그대로, 아래 [검색] 을 눌러야 한꺼번에 적용 */
 function SearchPanel(app, st, setFilter) {
   const d = st.draft;
   const close = () => { st.draft = null; st.pickOpen = false; app.render(); };
@@ -296,10 +297,10 @@ function SearchPanel(app, st, setFilter) {
           row({}, Txt('🔍 선수 검색', 24), div({ style: { flex: 1 } }), TextButton('✕', close, WhiteG, 44, 34, 17)),
           row({ gap: 10 }, input,
             CandyButton(set(() => { st.pickOpen = true; st.pickSel = d.programF; }), prog ? GoldG : WhiteG, { w: 210, h: 42, radius: 14 },
-              row({ gap: 6 }, prog ? ProgramEmblem(prog, 30) : Txt('🏷️', 18), Txt(prog ? prog.name : '프로그램 고르기', 16), Txt('▼', 12)))),
+              row({ gap: 6 }, prog ? ProgramEmblem(prog, 30) : Txt('🏷️', 18), Txt(prog ? prog.name : '클래스 고르기', 16), Txt('▼', 12)))),
           head('📍 포지션'),
           row({ gap: 6 }, POS_CHOICES.map(([p, t]) => chip(t, d.pos === p, set(() => { d.pos = p; }), p == null ? 70 : 118))),
-          head(prog ? '🛒 몇 진? (프로그램 선수는 진화가 없어요)' : '🛒 몇 진으로 볼까요? (진화된 선수는 그만큼 비싸요)'),
+          head(prog ? '🛒 몇 진? (클래스 선수는 진화가 없어요)' : '🛒 몇 진으로 볼까요? (진화된 선수는 그만큼 비싸요)'),
           div({ style: { display: 'grid', gridTemplateColumns: 'repeat(11, 1fr)', gap: 5, opacity: prog ? 0.4 : 1 } },
             [...Array(Evolution.MAX + 1)].map((_, e) => chip(`${e}진`, d.evoF === e, set(() => { d.evoF = e; })))),
           head('↕️ 정렬'),
@@ -312,7 +313,7 @@ function SearchPanel(app, st, setFilter) {
             TextButton('🔍 검색', apply, GreenG, 300, 50, 22))))));
 }
 
-/** 프로그램 선택 (엠블럼 칸) */
+/** 클래스 선택 (엠블럼 칸) */
 function ProgramPick(app, st) {
   const d = st.draft;
   const close = () => { st.pickOpen = false; st.pickSel = undefined; app.render(); };
@@ -320,12 +321,12 @@ function ProgramPick(app, st) {
     const on = st.pickSel === p.id;
     return col({ alignItems: 'center', justifyContent: 'center', gap: 4, height: 170, cursor: 'pointer', borderRadius: 16,
       background: on ? 'rgba(255,195,64,0.18)' : 'rgba(255,255,255,0.04)', border: `3px solid ${on ? '#ffc340' : 'rgba(255,255,255,0.12)'}` },
-    ProgramEmblem(p, 110), Txt(p.name, 17, WHITE), Txt(`프로그램 선수 ${p.players.length}명`, 12, 'rgba(255,255,255,0.6)'));
+    ProgramEmblem(p, 110), Txt(p.name, 17, WHITE), Txt(`클래스 선수 ${p.players.length}명`, 12, 'rgba(255,255,255,0.6)'));
   };
   return div({ class: 'dim', style: { background: 'rgba(10,6,20,0.7)' }, onClick: close },
     div({ onClick: (e) => e.stopPropagation(), style: { width: 760, height: 470, borderRadius: 22, border: '3px solid #b88cff', background: 'linear-gradient(#1d1a3a, #0e0c22)', boxShadow: '0 0 30px rgba(180,120,255,0.4)', display: 'flex', flexDirection: 'column', overflow: 'hidden' } },
       row({ height: 62, padding: '0 20px', background: 'linear-gradient(90deg,#14304a,#1d1a3a)', borderBottom: '2px solid rgba(255,255,255,0.15)' },
-        div({ style: { cursor: 'pointer' }, onClick: close }, Txt('‹', 30, WHITE)), space(10), Txt('프로그램 선택', 24, WHITE), div({ style: { flex: 1 } }),
+        div({ style: { cursor: 'pointer' }, onClick: close }, Txt('‹', 30, WHITE)), space(10), Txt('클래스 선택', 24, WHITE), div({ style: { flex: 1 } }),
         div({ style: { cursor: 'pointer' }, onClick: close }, Txt('✕', 26, WHITE))),
       div({ style: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, padding: 16 } },
         Programs.map((p) => div({ onClick: () => { st.pickSel = st.pickSel === p.id ? null : p.id; app.render(); } }, cell(p)))),
@@ -336,7 +337,7 @@ function ProgramPick(app, st) {
           onClick: () => { d.programF = st.pickSel ?? null; close(); } }, Txt('선택', 20, INK)))));
 }
 
-/* ───────── 프로그램 선수 ───────── */
+/* ───────── 클래스 선수 ───────── */
 
 function ProgramPlayerCard(app, l, selected, onClick) {
   const store = app.store;
@@ -383,7 +384,7 @@ function ProgramDetail(app, st, l, msg) {
       div({ class: 'center', style: { width: '100%', height: 38, flex: 'none', position: 'relative', overflow: 'hidden' } },
         ProgramBackground(9),
         div({ class: 'abs', style: { left: 0, right: 0, bottom: 0, height: 3, background: css(ProgramGold) } }),
-        OTxt(`⚡ ${l.program.name} 프로그램${owned ? ' · ✅ 보유' : ''}`, 17, ProgramYellow, { strokeWidth: 4 })),
+        OTxt(`⚡ ${l.program.name} 클래스${owned ? ' · ✅ 보유' : ''}`, 17, ProgramYellow, { strokeWidth: 4 })),
       div({ style: { width: 150, marginTop: 8 } }, ProgramCard(l, { h: 172 })),
       OTxt(`${l.flag} ${l.name}`, l.name.length > 8 ? 19 : 23, WHITE, { strokeWidth: 4 }),
       Txt(`${l.pos.label} · #${l.num} · ${l.country}`, 13, dim),

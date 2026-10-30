@@ -71,7 +71,7 @@ export function MenuScreen(app, st) {
     myTeam,
     row({ gap: 12, alignItems: 'stretch' },
       small('🎓', '튜토리얼', store.tutorialComplete ? '조작법 · 도감' : '조작법 배우기', WhiteG, () => app.go('tutorial'), !store.tutorialComplete ? `🪙${TUTORIAL_REWARD}` : null),
-      small('🔄', '이적시장', `선수 ${comma(Legends.TOTAL)}명`, GoldG, () => app.go('transfer'), store.ownedLegends.size === 0 ? 'NEW' : null),
+      small('🔄', '이적시장', `선수 ${comma(Legends.TOTAL + Legends.programs.length)}명`, GoldG, () => app.go('transfer'), store.ownedLegends.size === 0 ? 'NEW' : null),
       small('🛒', '상점', '강화 · 장식 · 가방', PinkG, () => app.go('shop'), canUpgrade ? '강화!' : null)));
 
   // 이벤트 센터 (로고 아래, 왼쪽 여백은 오른쪽 메뉴와 같게)

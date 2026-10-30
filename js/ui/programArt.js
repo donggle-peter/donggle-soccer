@@ -3,7 +3,7 @@ import { drawMongi, label, glow } from '../game/draw.js';
 import { Pos } from '../data/legends.js';
 import { css, Rng, INK, WHITE } from '../core.js';
 
-/* ───────── 프로그램 선수 그림 (검은 바탕 + 대각선 빛줄기·조각 무늬) ───────── */
+/* ───────── 클래스 선수 그림 (검은 바탕 + 대각선 빛줄기·조각 무늬) ───────── */
 
 const LegendRed = 0xffff4f64;
 const GkGreen = 0xff5fd068;
@@ -14,7 +14,7 @@ export const PROGRAM_BG = 'linear-gradient(#2a1630, #150a1c)';
 const LINES = ['rgba(255,130,60,0.55)', 'rgba(255,60,90,0.5)', 'rgba(190,90,255,0.45)', 'rgba(255,215,90,0.55)'];
 const SHARDS = [[0xffffe066, 0xffff8a1c], [0xffff9a2e, 0xffd81f3c], [0xffff5a3c, 0xff9c1450], [0xffffc340, 0xffff5a1f]];
 
-/** 프로그램 무늬. seed 가 같으면 늘 같은 무늬 */
+/** 클래스 무늬. seed 가 같으면 늘 같은 무늬 */
 export function drawProgram(ctx, w, hgt, seed = 1) {
   const r = new Rng(seed);
   ctx.fillStyle = '#150a1c'; ctx.fillRect(0, 0, w, hgt);
@@ -47,7 +47,7 @@ export function ProgramBackground(seed = 1) {
   return Canvas('100%', '100%', (ctx, t, vw, vh) => drawProgram(ctx, vw, vh, seed), { class: 'fill' });
 }
 
-/** 프로그램 엠블럼: 방패 안에 무늬 + ⚡ + 이름 */
+/** 클래스 엠블럼: 방패 안에 무늬 + ⚡ + 이름 */
 export function ProgramEmblem(program, size) {
   return Canvas(size, size, (ctx, t, w, hh) => {
     const shield = () => {
@@ -63,7 +63,7 @@ export function ProgramEmblem(program, size) {
   }, { style: { flex: 'none' } });
 }
 
-/** 동글이 그림 (프로그램 카드 안) */
+/** 동글이 그림 (클래스 카드 안) */
 export function ProgramFigure(l, scale, height) {
   return Canvas('100%', height, (ctx, t, vw, vh) => {
     const cx = vw / 2, base = vh - 6;
@@ -74,7 +74,7 @@ export function ProgramFigure(l, scale, height) {
 }
 
 /**
- * 프로그램 선수 카드. o: { h, selected, footer(글자), footerColor, onClick, mini, dim, check }
+ * 클래스 선수 카드. o: { h, selected, footer(글자), footerColor, onClick, mini, dim, check }
  * mini 는 이벤트 센터에서 쓰는 작은 카드
  */
 export function ProgramCard(l, o = {}) {
