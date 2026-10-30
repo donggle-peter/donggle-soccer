@@ -4,6 +4,7 @@ import { MatchEngine, Btn } from '../game/engine.js';
 import { drawMatch, ControlLayout, TouchState } from '../game/render.js';
 import { TutorialRun, drawTutorialOverlay } from '../game/tutorial.js';
 import { finishMatch, quitMatch } from '../app.js';
+import { Sound } from '../sound.js';
 
 /** 터치: 왼쪽 아래는 조이스틱, 오른쪽 아래는 버튼 (여러 손가락 동시에) */
 function attachTouches(canvas, app, getEngine, touch, onPause, intercept) {
@@ -139,8 +140,11 @@ export function MatchScreen(app, st, { setup, kind }) {
   document.addEventListener('visibilitychange', onHide);
   const cleanup = () => { unkeys(); untouch(); document.removeEventListener('visibilitychange', onHide); };
   app.onBack = pause;
+  let thunders = 0;
   app.onFrame = (dt) => {
     if (!st.paused) engine.update(dt);
+    // 번개 슛 소리
+    if (engine.thunderCount !== thunders) { thunders = engine.thunderCount; Sound.thunder(); }
     if (engine.done && !reported) {
       reported = true;
       cleanup();

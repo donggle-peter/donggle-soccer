@@ -7,6 +7,8 @@ export const FONT = 'Jua';
 const SHADOW = 0x381e143c;
 const BODY = 0xfffffdf7;
 const GOLD_BODY = 0xffffd54a;
+/** 클래스 '마지막 힘' 선수 얼굴 */
+const GREEN_BODY = 0xff9be37a;
 const MOUTH = 0xff8a2b45;
 
 export const Face = { HAPPY: 0, SHOUT: 1, DIZZY: 2, FOCUS: 3, SAD: 4 };
@@ -184,7 +186,7 @@ const brows = (c) => { c.moveTo(-17, -49); c.lineTo(-8, -47); c.moveTo(-5, -47.5
 
 /**
  * 동글이 한 명. (x, y) 는 발밑. 몸 좌표: 몸통 원 중심 (0,-31) 반지름 30.
- * o: { face, flip, phase, moving, gloves, hop, shadow, hat, golden }
+ * o: { face, flip, phase, moving, gloves, hop, shadow, hat, golden, green, boltBig }
  */
 export function drawMongi(ctx, x, y, scale, jersey, o = {}) {
   const face = o.face ?? Face.HAPPY;
@@ -204,7 +206,7 @@ export function drawMongi(ctx, x, y, scale, jersey, o = {}) {
   ovalFO(ctx, 11, -3 - fr, 9.5, 6.5, feet);
   ctx.translate(0, bob);
   ctx.beginPath(); bodyPath(ctx);
-  ctx.fillStyle = css(o.golden ? GOLD_BODY : BODY); ctx.fill();
+  ctx.fillStyle = css(o.golden ? GOLD_BODY : o.green ? GREEN_BODY : BODY); ctx.fill();
   ctx.save();
   ctx.beginPath(); bodyPath(ctx); ctx.clip();
   ctx.beginPath(); jerseyPath(ctx); ctx.fillStyle = css(jersey); ctx.fill();
@@ -238,7 +240,7 @@ export function drawMongi(ctx, x, y, scale, jersey, o = {}) {
   else if (face === Face.SAD) strokePath(ctx, mouthSad, INK, 3.2);
   else strokePath(ctx, mouthSmile, INK, 3.2);
   const hat = o.hat ?? Hat.NONE;
-  if (hat !== Hat.NONE) drawHat(ctx, hat);
+  if (hat !== Hat.NONE) drawHat(ctx, hat, o);
   ctx.restore();
 }
 
@@ -249,8 +251,30 @@ const LEAF = 0xff7bd36b;
 const pathFS = (ctx, build, fill) => { ctx.beginPath(); build(ctx); fillStroke(ctx, fill, 2.6); };
 
 /** 머리 장식 (몸 좌표 그대로, 몸 위에 그림) */
-export function drawHat(ctx, hat) {
+export function drawHat(ctx, hat, o = {}) {
   switch (hat) {
+    case Hat.BOLT: {
+      // 머리에 푹 박힌 작은 번개 (끝은 머리 속에 숨기고, 박힌 자리에 금). 번개 슛이 열리면(boltBig) 크게 커지고 빛난다
+      const big = o.boltBig ?? 0;
+      ctx.save();
+      if (big) {
+        const k = 1 + big * (1.3 + Math.sin((o.time ?? 0) * 14) * 0.12);
+        const g = ctx.createRadialGradient(5, -76, 2, 5, -76, 34 * k);
+        g.addColorStop(0, 'rgba(255,250,170,0.95)'); g.addColorStop(1, 'rgba(255,240,120,0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(5, -76, 34 * k, 0, Math.PI * 2); ctx.fill();
+        ctx.translate(5, -60); ctx.scale(k, k); ctx.translate(-5, 60);
+      }
+      ctx.save();
+      ctx.beginPath(); ctx.rect(-300, -400, 600, 600); bodyPath(ctx); ctx.clip('evenodd');
+      ctx.translate(5, -60); ctx.rotate(0.3);
+      pathFS(ctx, (c) => { c.moveTo(3, -31); c.lineTo(-8, -13); c.lineTo(0, -13); c.lineTo(-4, 10); c.lineTo(10, -18); c.lineTo(2, -18); c.lineTo(9, -31); c.closePath(); }, 0xffffe03a);
+      strokePath(ctx, (c) => { c.moveTo(3, -27); c.lineTo(-3, -17); }, withAlpha(WHITE, 0.85), 1.8);
+      ctx.restore();
+      // 박힌 자리에 쩍 갈라진 금
+      strokePath(ctx, (c) => { c.moveTo(1, -60); c.lineTo(-5, -57); c.lineTo(-9, -58); c.moveTo(9, -60); c.lineTo(14, -56); c.moveTo(5, -59); c.lineTo(4, -54); }, INK, 1.8);
+      ctx.restore();
+      break;
+    }
     case Hat.BAND: {
       ctx.save();
       ctx.beginPath(); bodyPath(ctx); ctx.clip();

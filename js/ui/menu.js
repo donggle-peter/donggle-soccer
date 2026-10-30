@@ -17,7 +17,7 @@ export function MenuScreen(app, st) {
   const store = app.store;
   app.onBack = st.showRecord ? () => { st.showRecord = false; app.render(); } : null;
   // 출전 중인 선수는 그 선수 모습(머리 장식·번호)으로
-  const cast = store.roster.map((p) => { const l = store.legendIn(p.slot); return l ? { slot: p.slot, name: l.short, num: l.num, hat: l.grade.hat, golden: l.grade === Grade.GOD } : p; });
+  const cast = store.roster.map((p) => { const l = store.legendIn(p.slot); return l ? { slot: p.slot, name: l.short, num: l.num, ...l.look } : p; });
   const wide = app.vw > 1150;
   const canUpgrade = ItemTypes.some((t) => store.level(t) < Items.MAX_LEVEL && store.coins >= Items.upgradeCost(store.level(t)));
   const playing = (store.worldCup && !store.worldCup.finished) || (store.league && !store.league.finished);
@@ -49,7 +49,7 @@ export function MenuScreen(app, st) {
   const teamFig = Canvas(96, 66, (ctx, t, vw, vh) => {
     [4, 3].forEach((s, i) => {
       const l = store.legendIn(s);
-      drawMongi(ctx, 30 + i * 36, vh - 4, 0.62, 0xffff5a6e, { flip: i === 1, shadow: false, hat: l ? l.grade.hat : store.player(s).hat, golden: l?.grade === Grade.GOD });
+      drawMongi(ctx, 30 + i * 36, vh - 4, 0.62, 0xffff5a6e, { flip: i === 1, shadow: false, ...(l ? l.look : { hat: store.player(s).hat }) });
     });
   }, { style: { flex: 'none' } });
 

@@ -175,6 +175,13 @@ export class MatchEngine {
     this.goldenAt = 0.12 + this.rnd.float() * 0.6; // 경기 시간 중 몇 %쯤에 열릴지
     this.goldenReady = null;
     this.goldenUsed = false;
+    /** 번개 슛: 클래스 '마지막 힘' 선수만. 황금 슛과 똑같이 한 경기에 한 번, 열리면 머리 위 번개가 커진다 */
+    this.lightningAt = 0.12 + this.rnd.float() * 0.6;
+    this.lightningReady = null;
+    this.lightningUsed = false;
+    /** 번개 슛 순간: 하늘에서 번개가 내리친다 { t, x, y } · 소리 내라고 세는 수 */
+    this.thunder = null;
+    this.thunderCount = 0;
     this.kickoff(0);
     const legends = this.players.filter((p) => p.team === 0 && p.m.glow).length;
     if (legends > 0) this.toast(`⭐ 레전드 ${legends}명 출전!`);
@@ -302,6 +309,7 @@ export class MatchEngine {
 
     if (!this.tutorial) this.clock += dt;
     if (!this.tutorial && !this.goldenUsed && !this.goldenReady && this.clock >= this.goldenAt * this.setup.duration) this.openGolden();
+    if (!this.tutorial && !this.lightningUsed && !this.lightningReady && this.clock >= this.lightningAt * this.setup.duration) this.openLightning();
     if (!this.tutorial && this.clock >= this.endTime) {
       if (this.setup.knockout && this.score[0] === this.score[1] && !this.extra) {
         this.extra = true;
@@ -347,6 +355,14 @@ export class MatchEngine {
     if (gods.length === 0) { this.goldenUsed = true; return; }
     this.goldenReady = gods[this.rnd.int(gods.length)];
     this.showBanner(`✨ ${this.goldenReady.m.name} 황금 슛 가능!`, 1.8, 0);
+  }
+
+  /** 번개 슛 열기: 내 팀 마지막 힘 선수(골키퍼 빼고) 중 한 명의 번개가 커진다 */
+  openLightning() {
+    const cands = this.players.filter((p) => p.team === 0 && p.m.lightning && !p.gk && !p.hidden);
+    if (cands.length === 0) { this.lightningUsed = true; return; }
+    this.lightningReady = cands[this.rnd.int(cands.length)];
+    this.showBanner(`⚡ ${this.lightningReady.m.name} 번개 슛 가능!`, 1.8, 0);
   }
 
   clearPress() { this.pressed.fill(false); this.kickPower = null; }
@@ -446,6 +462,7 @@ export class MatchEngine {
     const b = this.ball;
     b.owner = null; b.lastKicker = p; b.kickCd = 0.3; b.flight++;
     b.gkTried = false; b.fire = false; b.curve = false; b.curveT = 0;
+    b.special = false; b.sure = false; b.bolt = false; b.zigT = -1; b.zigOff = 0;
     p.kickAnim = 0.4;
   }
 
@@ -465,13 +482,21 @@ export class MatchEngine {
     const curve = this.armedCurve[t];
     // 전설의 신(★5)은 가끔 아무도 못 막는 황금 슛
     const golden = !fire && !curve && p === this.goldenReady;
+    const bolt = !fire && !curve && !golden && p === this.lightningReady;
     if (golden) { this.goldenReady = null; this.goldenUsed = true; }
+    if (bolt) { this.lightningReady = null; this.lightningUsed = true; }
+    // 황금 슛·번개 슛은 95% 골인 (나머지 5% 는 골대 옆으로 살짝 빗나감)
+    const special = golden || bolt;
+    const sure = special && r.float() < 0.95;
     let speed = (29 + r.float() * 4 + 3 * p.power) * KickPower.speedMul(pw);
     if (fire) speed = 44 + this.level(t, ItemType.FIRE) * 2;
     if (golden) speed = 47;
+    if (bolt) speed = 42;
     if (curve) ty = FW / 2 + (a >= 0 ? 1 : -1) * (GOAL_HALF - 0.9);
-    else if (!fire && !golden) ty += (r.float() * 2 - 1) * err;
+    else if (special) ty = sure ? FW / 2 + a * (GOAL_HALF - 1.7) : FW / 2 + (a >= 0 ? 1 : -1) * (GOAL_HALF + 1.6);
+    else if (!fire) ty += (r.float() * 2 - 1) * err;
     this.release(p);
+    b.special = special; b.sure = sure;
     this.stat('shot');
     let dx = gx - p.x, dy = ty - p.y;
     const d = hypot(dx, dy);
@@ -501,6 +526,14 @@ export class MatchEngine {
       this.shake = 0.5;
       this.stat('golden');
       this.showBanner(`✨ ${p.m.name}의 황금 슛!`, 1.3, t);
+    } else if (bolt) {
+      // 하늘에서 번개가 내리치고(우르릉 쾅쾅) 공이 지그재그로
+      b.fire = true; b.bolt = true; b.zigT = 0;
+      this.shake = 0.8;
+      this.thunder = { t: 0.8, x: p.x, y: p.y };
+      this.thunderCount++;
+      this.stat('bolt');
+      this.showBanner('⚡ 우르릉 쾅쾅! 번개 슛!', 1.4, t);
     } else if (curve) {
       this.showBanner('🌀 회오리 슛!', 1.1, t);
     }
@@ -954,6 +987,16 @@ export class MatchEngine {
         if (r.float() < 0.6) this.particles.push(particle(b.x, b.y, b.z + 0.3, 0, 0, 0, 0.5, 0.5, 0xff9fd8ff, 0.5, Fx.STAR, r.float() * 90));
       }
       b.x += b.vx * dt; b.y += b.vy * dt;
+      // 번개 슛: 겨눈 줄을 가운데로 지그재그. 골대에 가까워질수록 줄어서 겨눈 곳으로 들어간다
+      if (b.zigT >= 0) {
+        b.zigT += dt;
+        const ph = (b.zigT / 0.16) % 1;
+        const tri = ph < 0.25 ? ph * 4 : ph < 0.75 ? 2 - ph * 4 : ph * 4 - 4;
+        const near = clamp(Math.abs((b.shotTeam === 1 ? 0 : FL) - b.x) / 10, 0, 1);
+        const off = 1.6 * tri * near;
+        b.y += off - b.zigOff; b.zigOff = off;
+        if (b.speed() < 12) b.zigT = -1;
+      }
       if (b.z > 0 || b.vz > 0) {
         b.vz -= GRAV * dt;
         b.z += b.vz * dt;
@@ -966,7 +1009,10 @@ export class MatchEngine {
         const f = Math.exp(-1.1 * dt); b.vx *= f; b.vy *= f;
       }
       b.spin += b.speed() * dt * 1.5;
-      if (b.fire) for (let i = 0; i < 2; i++) {
+      if (b.bolt) for (let i = 0; i < 2; i++) {
+        this.particles.push(particle(b.x, b.y, b.z + 0.3, (r.float() - 0.5) * 4, (r.float() - 0.5) * 4, r.float() * 2, 0.35, 0.35,
+          r.bool() ? 0xfffff35a : 0xff9fe8ff, 0.7 + r.float() * 0.5, Fx.STAR, r.float() * 90));
+      } else if (b.fire) for (let i = 0; i < 2; i++) {
         this.particles.push(particle(
           b.x, b.y, b.z + 0.3, (r.float() - 0.5) * 2, (r.float() - 0.5) * 2, 1 + r.float() * 2,
           0.45, 0.45, r.bool() ? 0xffff9f1c : 0xffffd23f, 0.9 + r.float() * 0.6, Fx.FLAME, 0));
@@ -982,7 +1028,7 @@ export class MatchEngine {
     const inMouth = mouthY && b.z < GOAL_H;
     // 철벽 골문
     for (let t = 0; t < 2; t++) {
-      if (this.wallT[t] <= 0 || !mouthY) continue;
+      if (this.wallT[t] <= 0 || !mouthY || b.sure) continue;
       const wx = t === 0 ? 1.4 : FL - 1.4;
       const towards = t === 0 ? b.vx < 0 && b.x < wx : b.vx > 0 && b.x > wx;
       if (towards && Math.abs(b.x - wx) < 1.2) {
@@ -1034,6 +1080,12 @@ export class MatchEngine {
       if (!g.gk || g.hidden || g.team === b.shotTeam || g.stun > 0) continue;
       if (this.dist(g, b.x, b.y) > 1.9 * g.size || b.z > GOAL_H + 0.8) continue;
       b.gkTried = true;
+      if (b.sure) {
+        // 황금 슛·번개 슛 (95%): 골키퍼도 튕겨 나간다
+        g.stun = 1.1; g.stunKind = Stun.KNOCK;
+        this.stars(g.x, g.y, 6);
+        return;
+      }
       if (b.fire && g.power >= 2 && r.float() < 0.5) {
         // 전설의 신 골키퍼: 불꽃 슛도 가끔 잡는다
         this.take(g); this.stat('save');
@@ -1126,6 +1178,7 @@ export class MatchEngine {
   /* ───────────── 효과 ───────────── */
 
   updateFx(dt) {
+    if (this.thunder && (this.thunder.t -= dt) <= 0) this.thunder = null;
     const ps = this.particles;
     for (let i = 0; i < ps.length; i++) {
       const p = ps[i];

@@ -108,7 +108,7 @@ function SlotView(app, slot, selected, onClick) {
   const fig = Canvas('100%', 92, (ctx, t, vw, vh) => {
     const cx = vw / 2, base = vh - 4;
     if (l && l.grade.glow) glow(ctx, cx, base - 32, 46, 'rgba(255,246,176,0.67)');
-    drawMongi(ctx, cx, base, 0.86, slot === 0 ? TeamGk : TeamRed, { gloves: slot === 0, hat: l ? l.grade.hat : p.hat, golden: l?.grade === Grade.GOD });
+    drawMongi(ctx, cx, base, 0.86, slot === 0 ? TeamGk : TeamRed, { gloves: slot === 0, ...(l ? l.look : { hat: p.hat }) });
     label(ctx, String(l ? l.num : p.num), cx, base - 7, 10, WHITE, 2.2);
   }, { style: { position: 'absolute', left: 0, top: 8, width: '100%' } });
   return div({ style: { position: 'relative', width: '100%', height: '100%', cursor: 'pointer' }, onClick },
@@ -143,7 +143,7 @@ function Candidates(app, st, msg) {
       const ovr = l.ovrAt(store.evoOf(l));
       const other = store.slotOf(l.id);
       return CandidateRow({
-        hat: l.grade.hat, golden: l.grade === Grade.GOD, glow: l.grade.glow, gk: l.pos === Pos.GK, ovr, gradeColor: l.grade.color, name: l.short,
+        ...l.look, glow: l.grade.glow, gk: l.pos === Pos.GK, ovr, gradeColor: l.grade.color, name: l.short,
         sub: l.pos.name + (l.program ? ` · ⚡ ${l.program.name}` : '') + (other != null && other !== slot ? ` · ${nameIn(store, other)} 자리에서 이동` : ''), playing: other === slot, delta: ovr - cur,
       }, () => { store.assignLegend(l, slot); msg(`⭐ ${l.short} 출전!`); });
     }),
@@ -161,7 +161,7 @@ function Candidates(app, st, msg) {
 }
 
 function CandidateRow(o, onPick) {
-  const fig = Canvas(44, 50, (ctx, t, vw, vh) => drawMongi(ctx, vw / 2, vh - 2, 0.5, o.gk ? TeamGk : TeamRed, { gloves: o.gk, hat: o.hat, golden: o.golden, shadow: false }), { style: { flex: 'none' } });
+  const fig = Canvas(44, 50, (ctx, t, vw, vh) => drawMongi(ctx, vw / 2, vh - 2, 0.5, o.gk ? TeamGk : TeamRed, { gloves: o.gk, hat: o.hat, golden: o.golden, green: o.green, shadow: false }), { style: { flex: 'none' } });
   return row({ height: 58, flex: 'none', borderRadius: 16, border: `3px solid ${css(INK)}`, padding: '0 8px', background: css(o.playing ? 0xfffff8d6 : WHITE) },
     fig, space(6),
     div({ class: 'center', style: { width: 42, flex: 'none', background: css(o.gradeColor), borderRadius: 10, border: `2.5px solid ${css(INK)}` } }, Txt(String(o.ovr), 17)),

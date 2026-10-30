@@ -103,7 +103,7 @@ export function ResultScreen(app, st, { info, kind }) {
       const m = squad[i + 1];
       const hop = r > 0 ? Math.abs(Math.sin(t * 8 + i)) * 30 : 0;
       const face = r > 0 ? Face.SHOUT : r < 0 ? Face.SAD : Face.HAPPY;
-      drawMongi(ctx, vw * x, vh - 40, 1.9, setup.kit(0), { face, flip: i >= 2, hop: hop / 1.9, hat: m.hat, golden: m.golden });
+      drawMongi(ctx, vw * x, vh - 40, 1.9, setup.kit(0), { face, flip: i >= 2, hop: hop / 1.9, hat: m.hat, golden: m.golden, green: m.green });
       label(ctx, String(m.num), vw * x, vh - 40 - 8 * 1.9 - hop, 22, WHITE, 5);
     });
   }, { class: 'fill', anim: true });

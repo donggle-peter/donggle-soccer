@@ -321,11 +321,11 @@ export function drawMenuBackground(ctx, t, vw, vh, cast = Roster.defaults, showC
     const byBall = vh - 96 - Math.abs(Math.sin(t * 4)) * 60;
     // 내 선수 꾸미기(이름·번호·머리 장식)가 그대로 보인다
     const a = cast.find((p) => p.slot === 3), b = cast.find((p) => p.slot === 4), c = cast.find((p) => p.slot === 2);
-    drawMongi(ctx, 150, vh - 28, 1.95, 0xffff5a6e, { phase: t * 9, moving: true, hat: a.hat, golden: a.golden });
+    drawMongi(ctx, 150, vh - 28, 1.95, 0xffff5a6e, { phase: t * 9, moving: true, hat: a.hat, golden: a.golden, green: a.green });
     label(ctx, String(a.num), 150, vh - 28 - 8 * 1.95, 22, WHITE, 5);
-    drawMongi(ctx, 300, vh - 54, 1.72, 0xffffc93c, { face: hop > 18 ? Face.SHOUT : Face.HAPPY, hop: hop / 1.72, hat: b.hat, golden: b.golden });
+    drawMongi(ctx, 300, vh - 54, 1.72, 0xffffc93c, { face: hop > 18 ? Face.SHOUT : Face.HAPPY, hop: hop / 1.72, hat: b.hat, golden: b.golden, green: b.green });
     label(ctx, String(b.num), 300, vh - 54 - 8 * 1.72 - hop, 20, WHITE, 5);
-    drawMongi(ctx, 465, vh - 24, 1.88, 0xff4f8cff, { flip: true, phase: t * 7, moving: true, hat: c.hat, golden: c.golden });
+    drawMongi(ctx, 465, vh - 24, 1.88, 0xff4f8cff, { flip: true, phase: t * 7, moving: true, hat: c.hat, golden: c.golden, green: c.green });
     label(ctx, String(c.num), 465, vh - 24 - 8 * 1.88, 22, WHITE, 5);
     drawBall(ctx, bxBall, byBall, 19, t * 4);
   }

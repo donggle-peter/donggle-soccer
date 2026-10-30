@@ -68,7 +68,7 @@ export function ProgramFigure(l, scale, height) {
   return Canvas('100%', height, (ctx, t, vw, vh) => {
     const cx = vw / 2, base = vh - 6;
     glow(ctx, cx, base - 34 * scale, 56 * scale, 'rgba(255,150,60,0.55)');
-    drawMongi(ctx, cx, base, scale, l.pos === Pos.GK ? GkGreen : LegendRed, { gloves: l.pos === Pos.GK, hat: l.grade.hat });
+    drawMongi(ctx, cx, base, scale, l.pos === Pos.GK ? GkGreen : LegendRed, { gloves: l.pos === Pos.GK, ...l.look });
     label(ctx, String(l.num), cx, base - 8 * scale, 11 * scale, WHITE, 2.4 * scale);
   }, { style: { flex: 'none' } });
 }

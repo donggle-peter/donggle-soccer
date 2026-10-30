@@ -19,6 +19,8 @@ export const Hat = {
   AVOCADO: hat('AVOCADO', '아보카도 모자', 400),
   BALLBAND: hat('BALLBAND', '축구공 머리띠', 300),
   COLA: hat('COLA', '콜라 병', 600),
+  /** 클래스 '마지막 힘' 선수 전용 번개 */
+  BOLT: hat('BOLT', '번개', 0, false),
 };
 export const Hats = Object.values(Hat);
 Hats.forEach((h, i) => (h.ordinal = i));
@@ -26,7 +28,7 @@ export const hatByName = (n) => Hat[n] ?? Hat.NONE;
 
 /** 경기 선수 한 명 */
 export function SquadMember(num, gk, o = {}) {
-  return { num, gk, name: o.name ?? '', hat: o.hat ?? Hat.NONE, legend: o.legend ?? 0, glow: o.glow ?? false, golden: o.golden ?? false };
+  return { num, gk, name: o.name ?? '', hat: o.hat ?? Hat.NONE, legend: o.legend ?? 0, glow: o.glow ?? false, golden: o.golden ?? false, green: o.green ?? false, lightning: o.lightning ?? false };
 }
 
 export const Roster = {

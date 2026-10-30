@@ -328,7 +328,7 @@ export class Store {
       const l = this.legendIn(p.slot);
       if (l) {
         return SquadMember(l.num, p.slot === 0, {
-          name: l.short, hat: l.grade.hat, legend: powerOf(l.ovrAt(this.evoOf(l)) + CAPTAIN_BONUS), glow: l.grade.glow, golden: l.grade === Grade.GOD,
+          name: l.short, ...l.look, legend: powerOf(l.ovrAt(this.evoOf(l)) + CAPTAIN_BONUS), glow: l.grade.glow, lightning: !!l.program,
         });
       }
       return { ...Roster.toMember(p), legend: powerOf(Roster.BASE_OVR + CAPTAIN_BONUS) };

@@ -58,6 +58,8 @@ class Legend {
   }
   /** 진화 단계까지 반영한 오버롤 */
   ovrAt(evo) { return this.ovr + Evolution.bonus(evo); }
+  /** 그릴 때 모습: 머리 장식 · 황금 얼굴 · 초록 얼굴 */
+  get look() { return { hat: this.grade.hat, golden: this.grade === Grade.GOD, green: false }; }
   /** 기본 가격: 오버롤이 높을수록 비싸다 */
   get price() { return Legends.price(this.ovr); }
   /** 선수 가치 (진화 단계까지): 이 값으로 진화된 선수를 사고, 팔 때는 절반 */
@@ -65,7 +67,7 @@ class Legend {
   sellPrice(evo) { return Legends.round10(this.priceAt(evo) * SELL_RATE); }
   skill(evo) {
     if (this.ovrAt(evo) >= 100 && this.pos === Pos.GK) return '🧤 신의 손 · 불꽃 슛도 막아요';
-    if (this.grade === Grade.GOD) return '✨ 황금 슛 · 경기마다 한 번, 날개가 돋으면 못 막는 슛!';
+    if (this.grade === Grade.GOD) return '✨ 황금 슛 · 경기마다 한 번, 날개가 돋으면 95% 골인!';
     if (this.pos === Pos.GK) return '🧤 선방 · 오버롤이 높을수록 잘 막아요';
     if (this.pos === Pos.DF) return '🛡️ 태클 · 오버롤이 높을수록 잘 뺏어요';
     return '⚡ 몸놀림 · 오버롤이 높을수록 빠르고 정확해요';
@@ -99,9 +101,11 @@ class ProgramLegend extends Legend {
     this.program = program;
   }
   ovrAt() { return this.ovr; }
+  /** 마지막 힘 선수: 초록 얼굴 + 머리에 꽂은 번개 */
+  get look() { return { hat: Hat.BOLT, golden: false, green: true }; }
   get price() { return this.program.price; }
   priceAt() { return this.program.price; }
-  skill() { return `⚡ ${this.program.name} · 오버롤 ${this.ovr} · 진화 없음`; }
+  skill() { return '⚡ 번개 슛 · 경기마다 한 번, 번개가 커지면 지그재그 슛 95% 골인!'; }
 }
 
 const programPlayers = Programs.flatMap((p) => (p.players = p.baseIds.map((id) => new ProgramLegend(all[id], p))));

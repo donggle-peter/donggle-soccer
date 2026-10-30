@@ -200,12 +200,16 @@ function drawWorld(ctx, e, vw, vh) {
     else label(ctx, p.m.name, P.x(p.x, p.y), P.y(p.y) - 100 * ps * 0.95, 14, WHITE, 4);
   }
 
+  // 번개 슛: 하늘에서 슛한 자리로 번개가 내리친다 + 화면 번쩍
+  if (e.thunder) drawThunder(ctx, e, P, vw, vh);
+
   // 내 선수 표시 (노란 화살표. 이름은 다른 선수와 같은 크기)
   if (!e.autopilot && e.phase !== Phase.END) {
     const h = e.human;
     const s = P.s(h.y) * h.size;
     const x = P.x(h.x, h.y);
-    const top = P.y(h.y) - 104 * s * 0.95;
+    // 번개 슛이 열려 머리 번개가 커지면 이름·화살표를 그 위로
+    const top = P.y(h.y) - (h === e.lightningReady ? 136 : 104) * s * 0.95;
     const y = top + Math.sin(e.time * 6) * 3;
     // 이름은 가만히, 화살표만 통통 (둘 사이를 띄운다)
     if (h.m.name) {
@@ -231,6 +235,7 @@ function drawBallAt(ctx, e, P) {
     circle(ctx, gx, by, r * 1.5); ctx.fillStyle = css(0xaaffd23f); ctx.fill();
   }
   if (b.curve && b.curveT > 0) { circle(ctx, gx, by, r * 2); ctx.fillStyle = css(0x669fd8ff); ctx.fill(); }
+  if (b.bolt && b.zigT >= 0) { circle(ctx, gx, by, r * 2.3); ctx.fillStyle = css(0x88fff35a); ctx.fill(); circle(ctx, gx, by, r * 1.5); ctx.fillStyle = css(0xaa9fe8ff); ctx.fill(); }
   drawBall(ctx, gx, by, r, b.spin);
 }
 
@@ -277,6 +282,7 @@ function drawPlayer(ctx, e, P, p) {
   ctx.translate(sx, sy); ctx.rotate((tilt * Math.PI) / 180); ctx.translate(-sx, -sy);
   drawMongi(ctx, sx, sy, sc, e.setup.kit(p.team), {
     face, flip: !p.faceRight, phase: p.phase, moving: p.moving && p.stun <= 0, gloves: p.gk, hop, hat: p.m.hat, golden: p.m.golden,
+    green: p.m.green, boltBig: p === e.lightningReady ? 1 : 0, time: e.time,
   });
   label(ctx, String(p.m.num), sx, sy - (8 + hop) * sc, 13 * sc, WHITE, 3 * sc);
   ctx.restore();
@@ -291,6 +297,26 @@ function drawPlayer(ctx, e, P, p) {
       sparkle(ctx, sx + Math.cos(a) * 22 * sc, sy - 78 * sc + Math.sin(a) * 6 * sc, 0.5, YELLOW);
     }
   }
+}
+
+function drawThunder(ctx, e, P, vw, vh) {
+  const th = e.thunder;
+  const a = clamp(th.t / 0.8, 0, 1);
+  ctx.fillStyle = `rgba(255,255,230,${0.55 * a * a})`; ctx.fillRect(0, 0, vw, vh);
+  const tx = P.x(th.x, th.y), ty = P.y(th.y) - 40;
+  // 지그재그 번개 줄기 (매번 조금씩 다르게 떨림)
+  const r = new Rng(Math.floor(e.time * 30));
+  const pts = [[tx + (r.float() - 0.5) * 120, -10]];
+  const n = 7;
+  for (let i = 1; i < n; i++) pts.push([tx + (r.float() - 0.5) * 70 * (1 - i / n), -10 + (ty + 10) * (i / n)]);
+  pts.push([tx, ty]);
+  const line = (w, c) => { ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.strokeStyle = c; ctx.lineWidth = w; ctx.lineJoin = 'miter'; ctx.stroke(); };
+  ctx.globalAlpha = a;
+  line(18, 'rgba(255,240,120,0.35)');
+  line(9, css(0xffffe03a));
+  line(3.5, '#fff');
+  glow(ctx, tx, ty, 70, 'rgba(255,250,170,0.9)');
+  ctx.globalAlpha = 1;
 }
 
 /** 몸 양옆에 파닥이는 금빛 날개 (몸 뒤에 그린다) */
@@ -384,6 +410,18 @@ function drawHud(ctx, e, vw, touch) {
     rrect(ctx, vw / 2 - iw / 2, 68, iw, 30, 15); ctx.fillStyle = css(YELLOW); ctx.fill();
     ctx.strokeStyle = css(INK); ctx.lineWidth = 3; ctx.stroke();
     label(ctx, info, vw / 2, 83, 15, INK);
+  }
+  // 번개 슛이 열렸을 때 (황금 슛 표시가 있으면 그 아래)
+  if (e.lightningReady) {
+    const text = `⚡ ${e.lightningReady.m.name} 번개 슛 가능!`;
+    const k = 1 + Math.sin(e.time * 8) * 0.05;
+    const gw = (textWidth(ctx, text, 19) + 40) * k, gh = 36 * k, gy = e.goldenReady ? 146 : 104;
+    rrect(ctx, vw / 2 - gw / 2, gy + 4, gw, gh, gh / 2); ctx.fillStyle = css(INK); ctx.fill();
+    const g = ctx.createLinearGradient(0, gy, 0, gy + gh);
+    g.addColorStop(0, '#4a2a6e'); g.addColorStop(1, '#1d0f33');
+    rrect(ctx, vw / 2 - gw / 2, gy, gw, gh, gh / 2); ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = css(0xffffe03a); ctx.lineWidth = 3.5; ctx.stroke();
+    label(ctx, text, vw / 2, gy + gh / 2, 19 * k, 0xffffe03a);
   }
   // 황금 슛이 열렸을 때
   if (e.goldenReady) {
